@@ -154,11 +154,6 @@ def send_user(token):
                 user.parent_phone = phone['phone']
             db.session.commit()
     else:
-        User.query.filter(User.username == item['username']).update({
-            "location_id": location.id,
-            "role_id": role.id,
-            "balance": item['balance'],
-        })
         for phone in item['phone']:
             if phone['personal']:
                 user.phone = phone['phone']
@@ -172,6 +167,7 @@ def send_user(token):
         user.age = item['age']
         user.user_id = item['user_id']
         user.system_name = "gennis"
+        user.balance = item['balance']
         db.session.commit()
     if item['student']:
         student = Student.query.filter(Student.user_id == user.id).first()
@@ -407,3 +403,6 @@ def turon_user(username):
             "username": user.username,
         }
     })
+
+
+from .platform.views import *
