@@ -1,4 +1,5 @@
 from backend.models.basic_model import Group, Subject, db, Role, User, StudentSubject, Student, Teacher
+from backend.models.settings import check_exist_classroom_id
 
 
 def check_group_info(gr, type="gennis"):
@@ -42,19 +43,23 @@ def check_group_info(gr, type="gennis"):
     return group, subject
 
 
-def check_user_exists(user_get):
+def check_user_gennis(user_get):
     if user_get['student']:
         role = Role.query.filter(Role.type == "student", Role.role == "a43c33b82").first()
     else:
         role = Role.query.filter(Role.type == "teacher", Role.role == "b00c11a31").first()
-    user = User(username=user_get['username'], name=user_get['name'], surname=user_get['surname'],
-                balance=user_get['balance'],
-                password=user_get['password'], platform_id=user_get['id'],
-                role_id=role.id,
-                age=user_get['age'], father_name=user_get['father_name'], born_day=user_get['born_day'],
-                born_month=user_get['born_month'], born_year=user_get['born_year'],
-                user_id=user_get['user_id'])
-    user.add_commit()
+    user = User.query.filter(User.username == user_get['username'], User.system_name == "gennis").first()
+    classroom_user_id = check_exist_classroom_id()
+    if not user:
+        user = User(username=user_get['username'], name=user_get['name'], surname=user_get['surname'],
+                    balance=user_get['balance'],
+                    password=user_get['password'], platform_id=user_get['id'],
+                    role_id=role.id,
+                    classroom_user_id=classroom_user_id,
+                    age=user_get['age'], father_name=user_get['father_name'], born_day=user_get['born_day'],
+                    born_month=user_get['born_month'], born_year=user_get['born_year'],
+                    )
+        user.add_commit()
     for phone in user_get['phone']:
         if phone['personal']:
             user.phone = phone['phone']
@@ -66,9 +71,9 @@ def check_user_exists(user_get):
     user.born_day = user_get['born_day']
     user.father_name = user_get['father_name']
     user.age = user_get['age']
-    user.user_id = user_get['user_id']
     user.system_name = "gennis"
     user.balance = user_get['balance']
+    user.classroom_user_id = classroom_user_id
     db.session.commit()
     if user_get['student']:
         student = Student.query.filter(Student.user_id == user.id).first()
@@ -86,7 +91,6 @@ def check_user_exists(user_get):
             db.session.commit()
         for gr in user_get['student']['group']:
             group, _ = check_group_info(gr)
-
             if group not in student.groups:
                 student.groups.append(group)
                 db.session.commit()
@@ -119,3 +123,62 @@ def check_user_exists(user_get):
                 db.session.commit()
 
     return user
+
+def check_user_turon(info):
+    if info['role'] == "teacher":
+        role = Role.query.filter(Role.type == "teacher", Role.role == "b00c11a31").first()
+
+    else:
+        role = Role.query.filter(Role.type == "student", Role.role == "a43c33b82").first()
+
+    classroom_user_id = check_exist_classroom_id()
+    user = User.query.filter(User.username == info['username'], User.system_name == "school").first()
+    username = info['username']
+    if not user:
+        user = User(username=username, name=info['name'], surname=info['surname'], balance=info['balance'],
+                    password=password, turon_id=info['id'], role_id=role.id,
+                    age=datetime.datetime.now().year - int(info['birth_date'][:4]), father_name=info['father_name'],
+                    born_day=info['birth_date'][:2], system_name="school",
+                    parent_phone=info['parent_phone'], phone=info['phone'],
+                    born_month=info['birth_date'][5:7], born_year=info['birth_date'][:4],
+                    classroom_user_id=classroom_user_id)
+        user.add_commit()
+    else:
+        user.classroom_user_id = classroom_user_id
+        user.parent_phone = info['parent_number'] if 'parent_number' in info else None
+        user.phone = info['phone_number']
+        db.session.commit()
+
+    if info['role'] == "student":
+        role_instance = Student.query.filter(Student.user_id == user.id).first()
+        if not role_instance:
+            role_instance = Student(user_id=user.id)
+            role_instance.add_commit()
+    else:
+        role_instance = Teacher.query.filter(Teacher.user_id == user.id).first()
+        if not role_instance:
+            role_instance = Teacher(user_id=user.id)
+            role_instance.add_commit()
+    new_groups = []
+    subjects = []
+    for gr in info['groups']:
+        group, subjects = check_group_info(gr, type="turon")
+        if group not in role_instance.groups:
+            role_instance.groups.append(group)
+            db.session.commit()
+    if info['role'] == "student":
+        for sub in subjects:
+            subject = Subject.query.filter(Subject.name == sub['name']).first()
+            student_subject = StudentSubject.query.filter(StudentSubject.subject_id == subject.id,
+                                                          StudentSubject.student_id == role_instance.id).first()
+            if not student_subject:
+                student_subject = StudentSubject(subject_id=subject.id, student_id=role_instance.id)
+                db.session.add(student_subject)
+                db.session.commit()
+    else:
+        subjects = info['subject']
+        for sub in subjects:
+            subject = Subject.query.filter(Subject.name == sub['name']).first()
+            if subject not in role_instance.subjects:
+                role_instance.subjects.append(subject)
+                db.session.commit()

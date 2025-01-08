@@ -9,7 +9,7 @@ from backend.models.basic_model import Role, Teacher, User, Student, Location, S
 from flask_jwt_extended import jwt_required, get_jwt_identity, create_access_token, create_refresh_token
 from pprint import pprint
 from werkzeug.security import generate_password_hash, check_password_hash
-from .settings import check_exist_id
+from .settings import check_exist_id, check_exist_classroom_id
 import uuid
 import hashlib
 
@@ -314,45 +314,24 @@ def turon_user(username):
     password = generate_password_hash(info['password'])
     if info['role'] == "teacher":
         role = Role.query.filter(Role.type == "teacher", Role.role == "b00c11a31").first()
-        if not role:
-            role = Role(type="teacher", role="b00c11a31")
-            role.add_commit()
+
     else:
         role = Role.query.filter(Role.type == "student", Role.role == "a43c33b82").first()
-        if not role:
-            role = Role(type="student", role="a43c33b82")
-            role.add_commit()
-    user_id = check_exist_id()
+
+    classroom_user_id = check_exist_classroom_id()
     user = User.query.filter(User.username == info['username'], User.system_name == "school").first()
     username = info['username']
-    # if user:
-    #     if user.system_name != "school":
-    #         username = info['username'] + "_school"
-    #         response = requests.post(f"{django_server}/api/Users/username-check/", headers={
-    #             'Content-Type': 'application/json'
-    #         }, json={"username": username})
-    #         while response.json()['exists']:
-    #             hashed_uuid = int(hashlib.sha256(str(uuid.uuid4()).encode()).hexdigest(), 5)
-    #             numeric_uuid = str(hashed_uuid)[:4]
-    #             username = info['username'] + "_" + numeric_uuid
-    #             response = requests.post(f"{django_server}/api/Users/username-check/", headers={
-    #                 'Content-Type': 'application/json'
-    #             }, json={"username": username})
-    #         create_status = True
-    #     else:
-    #         create_status = False
-    # else:
-    #     create_status = True
     if not user:
         user = User(username=username, name=info['name'], surname=info['surname'], balance=info['balance'],
                     password=password, turon_id=info['id'], role_id=role.id,
                     age=datetime.datetime.now().year - int(info['birth_date'][:4]), father_name=info['father_name'],
                     born_day=info['birth_date'][:2], system_name="school",
                     parent_phone=info['parent_phone'], phone=info['phone'],
-                    born_month=info['birth_date'][5:7], born_year=info['birth_date'][:4], user_id=user_id)
+                    born_month=info['birth_date'][5:7], born_year=info['birth_date'][:4],
+                    classroom_user_id=classroom_user_id)
         user.add_commit()
     else:
-        user.user_id = user_id
+        user.classroom_user_id = classroom_user_id
         user.parent_phone = info['parent_number'] if 'parent_number' in info else None
         user.phone = info['phone_number']
         db.session.commit()
@@ -369,12 +348,11 @@ def turon_user(username):
             role_instance.add_commit()
     new_groups = []
     subjects = []
-    pprint(request.get_json())
     for gr in info['groups']:
         group, subjects = check_group_info(gr, type="turon")
         if group not in role_instance.groups:
             role_instance.groups.append(group)
-            new_groups.append(group)
+            db.session.commit()
     if info['role'] == "student":
         for sub in subjects:
             subject = Subject.query.filter(Subject.name == sub['name']).first()
@@ -386,14 +364,11 @@ def turon_user(username):
                 db.session.commit()
     else:
         subjects = info['subject']
-        print(subjects)
         for sub in subjects:
             subject = Subject.query.filter(Subject.name == sub['name']).first()
             if subject not in role_instance.subjects:
                 role_instance.subjects.append(subject)
                 db.session.commit()
-    if new_groups:
-        db.session.commit()
 
     requests.put(f"{django_server}/api/Users/username-check/", headers={
         'Content-Type': 'application/json'

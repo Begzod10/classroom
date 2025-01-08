@@ -151,3 +151,14 @@ def check_exist_id(user_id=None):
         user_id = id.hex[0:35]
         exist_user = User.query.filter(User.user_id == user_id).first()
     return user_id
+
+
+def check_exist_classroom_id(classroom_id=None):
+    id = uuid.uuid1()
+    classroom_id = id.hex[0:35] if not classroom_id else classroom_id
+    exist_classroom = User.query.filter(User.classroom_user_id == classroom_id).first()
+    while exist_classroom:
+        id = uuid.uuid1()
+        classroom_id = id.hex[0:35]
+        exist_classroom = User.query.filter(User.classroom_user_id == classroom_id).first()
+    return classroom_id
