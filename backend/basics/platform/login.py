@@ -29,7 +29,7 @@ def login():
             return {"msg": "Username yoki parol noto'g'ri", "success": False}, 200
         user = check_user_gennis(user_get)
     else:
-        response = requests.post(f"{django_server}/api/login", headers={
+        response = requests.post(f"{django_server}/api/token/", headers={
             'Content-Type': 'application/json'
         }, json={
             "username": username,
@@ -46,7 +46,7 @@ def login():
     return jsonify({
         "data": {
             "info": user.convert_json(),
-            "access_token": create_access_token(identity=user.user_id),
-            "refresh_token": create_refresh_token(identity=user.user_id)
+            "access_token": create_access_token(identity=user.classroom_user_id),
+            "refresh_token": create_refresh_token(identity=user.classroom_user_id)
         }
     })

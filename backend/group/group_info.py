@@ -23,19 +23,6 @@ def get_groups():
     student = Student.query.filter(Student.user_id == user.id).first()
     teacher = Teacher.query.filter(Teacher.user_id == user.id).first()
 
-    # users = User.query.filter(User.teacher != None).order_by(User.id).all()
-    # for item in users:
-    #     print(item.username)
-    #     item.student = None
-    #     db.session.commit()
-    # students = Student.query.filter(Student.user_id == None).all()
-    # for st in students:
-    #     db.session.delete(st)
-    #     db.session.commit()
-    # print(len(students))
-    # print(user.student)
-    # print(user.teacher)
-
     if student:
         groups = db.session.query(Group).join(Group.student).options(contains_eager(Group.student)).filter(
             Student.id == student.id).order_by(Group.platform_id).all()
@@ -196,7 +183,6 @@ def group_profile(group_id, token):
                 if group in st.groups:
                     st.groups.remove(group)
                     db.session.commit()
-
 
     student_level = StudentLevel.query.filter(StudentLevel.group_id == group_id).all()
     levels = SubjectLevel.query.filter(SubjectLevel.id.in_([level.level_id for level in student_level])).all()
