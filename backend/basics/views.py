@@ -27,53 +27,38 @@ def create_token():
     return response
 
 
-@app.route(f"{api}/token/refresh", defaults={"token": None}, methods=["POST"])
-@app.route(f"{api}/refresh/<token>/<type>", methods=["POST"])
+@app.route(f"{api}/refresh", methods=["POST"])
 @cross_origin()
 @jwt_required(refresh=True)
-def refresh(token, type):
+def refresh():
     identity = get_jwt_identity()
-    access_token = create_access_token(identity=identity)
-    user = User.query.filter_by(user_id=identity).first()
-    if type == "turon":
-        response = requests.post(f"{django_server}/api/token/refresh/", headers={
-            "Authorization": "Bearer " + token,
-            'Content-Type': 'application/json'
-        }, json={"refresh": token})
-        info = {
-            "info": user.convert_json(),
-            "access_token": access_token,
-            "refresh_token": create_refresh_token(identity=user.user_id),
-            "old_access_token": response.json()['access'],
-            "platform_refresh_token": response.json()['refresh_token']
-            # "img": response.json()['profile_photo']
-
-        }
-        info['info'].update(response.json()['teacher_info'] if 'teacher_info' in response.json() else {})
-
-        return jsonify({
-            "data": info
-        })
-
+    user = User.query.filter(User.classroom_user_id == identity).first()
+    print(user.username)
+    if user.system_name == "school":
+        if user.teacher:
+            response = requests.get(f"{django_server}/api/Teachers/get_balance/{user.turon_id}/", headers={
+                'Content-Type': 'application/json'
+            })
+        else:
+            response = requests.get(f"{django_server}/api/Students/get_balance/{user.turon_id}/", headers={
+                'Content-Type': 'application/json'
+            })
     else:
-        response = requests.post(f"{platform_server}/api/refresh", headers={
-            "Authorization": "Bearer " + token,
+        response = requests.get(f"{platform_server}/Teachers/get_balance/{user.platform_id}/", headers={
             'Content-Type': 'application/json'
         })
-        info = {
-            "info": user.convert_json(),
-            "access_token": access_token,
-            "refresh_token": create_refresh_token(identity=user.user_id),
-            "old_access_token": response.json()['access_token'],
-            "platform_refresh_token": response.json()['refresh_token'],
-            "img": response.json()['profile_photo']
-
-        }
-        info['info'].update(response.json()['teacher_info'] if 'teacher_info' in response.json() else {})
-
-        return jsonify({
-            "data": info
-        })
+    if 'balance' not in response.json():
+        user.balance = response.json()['balance']
+        db.session.commit()
+    info = {
+        "info": user.convert_json(),
+        "access_token": create_access_token(identity=identity),
+        "refresh_token": create_refresh_token(identity=user.classroom_user_id),
+        "img": response.json()['profile_photo'] if "profile_photo" in response.json() else None
+    }
+    return jsonify({
+        "data": info
+    })
 
 
 @app.route(f'{api}/send_user/<token>')

@@ -263,30 +263,6 @@ def set_observer(user_id):
     })
 
 
-@app.route(f'{api}/update_student_balance', methods=['POST'])
-def update_student_balance():
-    platform_id = request.get_json()['platform_id']
-    balance = request.get_json()['balance']
-    teacher_id = request.get_json()['teacher_id']
-    salary = request.get_json()['salary']
-    debtor = request.get_json()['debtor']
-    User.query.filter(User.platform_id == teacher_id).update({
-        "balance": salary
-    })
-    User.query.filter(User.platform_id == platform_id).update({
-        "balance": balance
-    })
-    db.session.commit()
-    user = User.query.filter(User.platform_id == platform_id).first()
-    Student.query.filter(Student.user_id == user.id).update({
-        "debtor": debtor
-    })
-    db.session.commit()
-    return jsonify({
-        "msg": "Balance o'zgartirildi"
-    })
-
-
 @app.route(f'{api}/check_level/<group_id>/<level_id>', methods=['POST', 'GET'])
 def check_level(group_id, level_id):
     subject_level = SubjectLevel.query.filter(SubjectLevel.id == level_id).first()

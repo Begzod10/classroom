@@ -40,9 +40,7 @@ def login():
         user_get = response.json()['user'] if 'user' in response.json() else {}
         if not user_get:
             return {"msg": "Username yoki parol noto'g'ri", "success": False}, 200
-
         user = check_user_turon(user_get)
-
     return jsonify({
         "data": {
             "info": user.convert_json(),
