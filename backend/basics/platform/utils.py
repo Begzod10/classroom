@@ -48,6 +48,7 @@ def check_user_gennis(user_get):
         role = Role.query.filter(Role.type == "student", Role.role == "a43c33b82").first()
     else:
         role = Role.query.filter(Role.type == "teacher", Role.role == "b00c11a31").first()
+    print(role)
     user = User.query.filter(User.username == user_get['username'], User.system_name == "gennis").first()
     classroom_user_id = check_exist_classroom_id()
     if not user:
@@ -123,6 +124,7 @@ def check_user_gennis(user_get):
                 db.session.commit()
 
     return user
+
 
 def check_user_turon(info):
     if info['role'] == "teacher":

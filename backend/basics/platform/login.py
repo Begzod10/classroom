@@ -9,7 +9,6 @@ from flask_jwt_extended import create_access_token, create_refresh_token
 
 @app.route(f'{api}/login', methods=['POST'])
 def login():
-    pprint(request.get_json())
     username = request.get_json()['username']
     password = request.get_json()['password']
     system_name = request.get_json()['system_name']
@@ -24,7 +23,8 @@ def login():
             "password": password,
             "user_role": user_role
         })
-        user_get = response.json()['user'] if 'user' in response.json() else {}
+        print(response.json())
+        user_get = response.json()['data']['user'] if 'user' in response.json() else {}
         if not user_get:
             return {"msg": "Username yoki parol noto'g'ri", "success": False}, 200
         user = check_user_gennis(user_get)
@@ -42,11 +42,10 @@ def login():
             return {"msg": "Username yoki parol noto'g'ri", "success": False}, 200
 
         user = check_user_turon(user_get)
-
     return jsonify({
         "data": {
             "info": user.convert_json(),
-            "access_token": create_access_token(identity=user.user_id),
-            "refresh_token": create_refresh_token(identity=user.user_id)
+            "access_token": create_access_token(identity=user.classroom_user_id),
+            "refresh_token": create_refresh_token(identity=user.classroom_user_id)
         }
     })
