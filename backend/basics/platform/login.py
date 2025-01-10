@@ -9,7 +9,6 @@ from flask_jwt_extended import create_access_token, create_refresh_token
 
 @app.route(f'{api}/login', methods=['POST'])
 def login():
-    pprint(request.get_json())
     username = request.get_json()['username']
     password = request.get_json()['password']
     system_name = request.get_json()['system_name']
@@ -24,6 +23,7 @@ def login():
             "password": password,
             "user_role": user_role
         })
+        print(response.json())
         user_get = response.json()['user'] if 'user' in response.json() else {}
         if not user_get:
             return {"msg": "Username yoki parol noto'g'ri", "success": False}, 200
