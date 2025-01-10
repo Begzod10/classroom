@@ -23,19 +23,6 @@ def get_groups():
     student = Student.query.filter(Student.user_id == user.id).first()
     teacher = Teacher.query.filter(Teacher.user_id == user.id).first()
 
-    # users = User.query.filter(User.teacher != None).order_by(User.id).all()
-    # for item in users:
-    #     print(item.username)
-    #     item.student = None
-    #     db.session.commit()
-    # students = Student.query.filter(Student.user_id == None).all()
-    # for st in students:
-    #     db.session.delete(st)
-    #     db.session.commit()
-    # print(len(students))
-    # print(user.student)
-    # print(user.teacher)
-
     if student:
         groups = db.session.query(Group).join(Group.student).options(contains_eager(Group.student)).filter(
             Student.id == student.id).order_by(Group.platform_id).all()
@@ -74,129 +61,128 @@ def group_profile(group_id, token):
     user = User.query.filter_by(user_id=identity).first()
     student = Student.query.filter(Student.user_id == user.id).first()
     group = Group.query.filter(Group.id == group_id).first()
-    if token:
-        if user.system_name != "school":
-            requests.post(f"{platform_server}/api/update_group_datas", headers={
-                "Authorization": "Bearer " + token,
-                'Content-Type': 'application/json'
-            }, json={
-                "group": group.convert_json()
-            })
-            response = requests.get(f"{platform_server}/api/get_group_datas/{group.platform_id}", headers={
-                "Authorization": "Bearer " + token,
-                'Content-Type': 'application/json'
-            })
-            if 'users' not in response.json():
-                return jsonify({
-                    "msg": "Not logged in"
-                })
-            group_level = response.json()['group']['level']
-
-            if group_level:
-                level = SubjectLevel.query.filter(SubjectLevel.name == group_level).first()
-                group.level_id = level.id
-                db.session.commit()
-            users = response.json()['users']
-            for item in users:
-                location_id = item['location']['id']
-                location_name = item['location']['name']
-                role_id = item["role"]['id']
-                role_type = item['role']['name']
-                role_token = item['role']['role']
-                role = Role.query.filter(Role.platform_id == role_id).first()
-                if not role:
-                    role = Role(platform_id=role_id, type=role_type, role=role_token)
-                    role.add_commit()
-                location = Location.query.filter(Location.platform_id == location_id).first()
-                if not location:
-                    location = Location(name=location_name, platform_id=location_id)
-                    location.add_commit()
-                exist_user = User.query.filter(User.username == item['username']).first()
-                if not exist_user:
-                    # try:
-                    exist_user = User(username=item['username'], name=item['name'], surname=item['surname'],
-                                      balance=item['balance'],
-                                      password=item['password'], platform_id=item['id'], location_id=location.id,
-                                      role_id=role.id,
-                                      age=item['age'], father_name=item['father_name'], born_day=item['born_day'],
-                                      born_month=item['born_month'], born_year=item['born_year'],
-                                      user_id=item['user_id'])
-                    exist_user.add_commit()
-                    # except Exception as e:
-                    #     response = requests.get(f"{platform_server}/api/check_user_id/{item['user_id']}/{item['username']}",
-                    #                             headers={
-                    #                                 "Authorization": "Bearer " + token,
-                    #                                 'Content-Type': 'application/json'
-                    #                             })
-                    #     user_id = response.json()['user_id']
-                    #     exist_user = User(username=item['username'], name=item['name'], surname=item['surname'],
-                    #                       balance=item['balance'],
-                    #                       password=item['password'], platform_id=item['id'], location_id=location.id,
-                    #                       role_id=role.id,
-                    #                       age=item['age'], father_name=item['father_name'], born_day=item['born_day'],
-                    #                       born_month=item['born_month'], born_year=item['born_year'],
-                    #                       user_id=user_id)
-                    #     exist_user.add_commit()
-                    for phone in item['phone']:
-                        if phone['personal']:
-                            exist_user.phone = phone['phone']
-                        else:
-                            exist_user.parent_phone = phone['phone']
-                        db.session.commit()
-                else:
-                    User.query.filter(User.username == item['username']).update({
-                        "location_id": location.id,
-                        "role_id": role.id,
-                        "balance": item['balance'],
-                    })
-                    for phone in item['phone']:
-                        if phone['personal']:
-                            exist_user.phone = phone['phone']
-                        else:
-                            exist_user.parent_phone = phone['phone']
-                        db.session.commit()
-                    exist_user.born_year = item['born_year']
-                    exist_user.born_month = item['born_month']
-                    exist_user.born_day = item['born_day']
-                    exist_user.father_name = item['father_name']
-                    exist_user.age = item['age']
-                    exist_user.user_id = item['user_id']
-                    db.session.commit()
-                student = Student.query.filter(Student.user_id == exist_user.id).first()
-                if not student:
-                    student = Student(user_id=exist_user.id, debtor=item['student']['debtor'],
-                                      representative_name=item['student']['representative_name'],
-                                      representative_surname=item['student']['representative_surname'])
-                    student.add_commit()
-                else:
-                    Student.query.filter(Student.user_id == exist_user.id).update({
-                        "debtor": item['student']['debtor'],
-                        "representative_name": item['student']['representative_name'],
-                        "representative_surname": item['student']['representative_surname']
-                    })
-                    db.session.commit()
-                for gr in item['student']['group']:
-                    group, _ = check_group_info(gr)
-
-                    if group not in student.groups:
-                        student.groups.append(group)
-                        db.session.commit()
-                    subject = Subject.query.filter(Subject.id == group.subject_id).first()
-                    student_subject = StudentSubject.query.filter(StudentSubject.subject_id == subject.id,
-                                                                  StudentSubject.student_id == student.id).first()
-                    if not student_subject:
-                        student_subject = StudentSubject(subject_id=subject.id, student_id=student.id)
-                        student_subject.add_commit()
-            users_list = []
-            for user in users:
-                users_list.append(user['id'])
-            exist_students = db.session.query(Student).join(Student.user).options(contains_eager(Student.user)).filter(
-                ~User.platform_id.in_(users_list)).join(Student.groups).filter(Group.id == group_id).all()
-            for st in exist_students:
-                if group in st.groups:
-                    st.groups.remove(group)
-                    db.session.commit()
-
+    # if token:
+    #     if user.system_name != "school":
+    #         requests.post(f"{platform_server}/api/update_group_datas", headers={
+    #             "Authorization": "Bearer " + token,
+    #             'Content-Type': 'application/json'
+    #         }, json={
+    #             "group": group.convert_json()
+    #         })
+    #         response = requests.get(f"{platform_server}/api/get_group_datas/{group.platform_id}", headers={
+    #             "Authorization": "Bearer " + token,
+    #             'Content-Type': 'application/json'
+    #         })
+    #         if 'users' not in response.json():
+    #             return jsonify({
+    #                 "msg": "Not logged in"
+    #             })
+    #         group_level = response.json()['group']['level']
+    #
+    #         if group_level:
+    #             level = SubjectLevel.query.filter(SubjectLevel.name == group_level).first()
+    #             group.level_id = level.id
+    #             db.session.commit()
+    #         users = response.json()['users']
+    #         for item in users:
+    #             location_id = item['location']['id']
+    #             location_name = item['location']['name']
+    #             role_id = item["role"]['id']
+    #             role_type = item['role']['name']
+    #             role_token = item['role']['role']
+    #             role = Role.query.filter(Role.platform_id == role_id).first()
+    #             if not role:
+    #                 role = Role(platform_id=role_id, type=role_type, role=role_token)
+    #                 role.add_commit()
+    #             location = Location.query.filter(Location.platform_id == location_id).first()
+    #             if not location:
+    #                 location = Location(name=location_name, platform_id=location_id)
+    #                 location.add_commit()
+    #             exist_user = User.query.filter(User.username == item['username']).first()
+    #             if not exist_user:
+    #                 # try:
+    #                 exist_user = User(username=item['username'], name=item['name'], surname=item['surname'],
+    #                                   balance=item['balance'],
+    #                                   password=item['password'], platform_id=item['id'], location_id=location.id,
+    #                                   role_id=role.id,
+    #                                   age=item['age'], father_name=item['father_name'], born_day=item['born_day'],
+    #                                   born_month=item['born_month'], born_year=item['born_year'],
+    #                                   user_id=item['user_id'])
+    #                 exist_user.add_commit()
+    #                 # except Exception as e:
+    #                 #     response = requests.get(f"{platform_server}/api/check_user_id/{item['user_id']}/{item['username']}",
+    #                 #                             headers={
+    #                 #                                 "Authorization": "Bearer " + token,
+    #                 #                                 'Content-Type': 'application/json'
+    #                 #                             })
+    #                 #     user_id = response.json()['user_id']
+    #                 #     exist_user = User(username=item['username'], name=item['name'], surname=item['surname'],
+    #                 #                       balance=item['balance'],
+    #                 #                       password=item['password'], platform_id=item['id'], location_id=location.id,
+    #                 #                       role_id=role.id,
+    #                 #                       age=item['age'], father_name=item['father_name'], born_day=item['born_day'],
+    #                 #                       born_month=item['born_month'], born_year=item['born_year'],
+    #                 #                       user_id=user_id)
+    #                 #     exist_user.add_commit()
+    #                 for phone in item['phone']:
+    #                     if phone['personal']:
+    #                         exist_user.phone = phone['phone']
+    #                     else:
+    #                         exist_user.parent_phone = phone['phone']
+    #                     db.session.commit()
+    #             else:
+    #                 User.query.filter(User.username == item['username']).update({
+    #                     "location_id": location.id,
+    #                     "role_id": role.id,
+    #                     "balance": item['balance'],
+    #                 })
+    #                 for phone in item['phone']:
+    #                     if phone['personal']:
+    #                         exist_user.phone = phone['phone']
+    #                     else:
+    #                         exist_user.parent_phone = phone['phone']
+    #                     db.session.commit()
+    #                 exist_user.born_year = item['born_year']
+    #                 exist_user.born_month = item['born_month']
+    #                 exist_user.born_day = item['born_day']
+    #                 exist_user.father_name = item['father_name']
+    #                 exist_user.age = item['age']
+    #                 exist_user.user_id = item['user_id']
+    #                 db.session.commit()
+    #             student = Student.query.filter(Student.user_id == exist_user.id).first()
+    #             if not student:
+    #                 student = Student(user_id=exist_user.id, debtor=item['student']['debtor'],
+    #                                   representative_name=item['student']['representative_name'],
+    #                                   representative_surname=item['student']['representative_surname'])
+    #                 student.add_commit()
+    #             else:
+    #                 Student.query.filter(Student.user_id == exist_user.id).update({
+    #                     "debtor": item['student']['debtor'],
+    #                     "representative_name": item['student']['representative_name'],
+    #                     "representative_surname": item['student']['representative_surname']
+    #                 })
+    #                 db.session.commit()
+    #             for gr in item['student']['group']:
+    #                 group, _ = check_group_info(gr)
+    #
+    #                 if group not in student.groups:
+    #                     student.groups.append(group)
+    #                     db.session.commit()
+    #                 subject = Subject.query.filter(Subject.id == group.subject_id).first()
+    #                 student_subject = StudentSubject.query.filter(StudentSubject.subject_id == subject.id,
+    #                                                               StudentSubject.student_id == student.id).first()
+    #                 if not student_subject:
+    #                     student_subject = StudentSubject(subject_id=subject.id, student_id=student.id)
+    #                     student_subject.add_commit()
+    #         users_list = []
+    #         for user in users:
+    #             users_list.append(user['id'])
+    #         exist_students = db.session.query(Student).join(Student.user).options(contains_eager(Student.user)).filter(
+    #             ~User.platform_id.in_(users_list)).join(Student.groups).filter(Group.id == group_id).all()
+    #         for st in exist_students:
+    #             if group in st.groups:
+    #                 st.groups.remove(group)
+    #                 db.session.commit()
 
     student_level = StudentLevel.query.filter(StudentLevel.group_id == group_id).all()
     levels = SubjectLevel.query.filter(SubjectLevel.id.in_([level.level_id for level in student_level])).all()

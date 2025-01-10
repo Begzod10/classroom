@@ -24,12 +24,12 @@ def login():
             "user_role": user_role
         })
         print(response.json())
-        user_get = response.json()['data']['user'] if 'user' in response.json() else {}
+        user_get = response.json()['user'] if 'user' in response.json() else {}
         if not user_get:
             return {"msg": "Username yoki parol noto'g'ri", "success": False}, 200
         user = check_user_gennis(user_get)
     else:
-        response = requests.post(f"{django_server}/api/login", headers={
+        response = requests.post(f"{django_server}/api/token/", headers={
             'Content-Type': 'application/json'
         }, json={
             "username": username,

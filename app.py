@@ -40,7 +40,7 @@ platform_server = 'http://192.168.1.11:5002'
 # platform_server = "http://192.168.0.108:5002"
 # django_server = "http://192.168.1.61:8000"
 # django_server = "http://turonedu.uz"
-django_server = "http://192.168.1.14:7622"
+django_server = "http://192.168.1.11:8000/"
 
 # basics
 from backend.basics.views import *

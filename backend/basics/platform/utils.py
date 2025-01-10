@@ -1,5 +1,6 @@
 from backend.models.basic_model import Group, Subject, db, Role, User, StudentSubject, Student, Teacher
 from backend.models.settings import check_exist_classroom_id
+from datetime import datetime
 
 
 def check_group_info(gr, type="gennis"):
@@ -23,7 +24,6 @@ def check_group_info(gr, type="gennis"):
         if type == "gennis":
             group = Group(platform_id=gr['id'], **group_data)
         else:
-
             group = Group(turon_id=gr['id'], **group_data)
         group.add_commit()
     else:
@@ -138,10 +138,10 @@ def check_user_turon(info):
     username = info['username']
     if not user:
         user = User(username=username, name=info['name'], surname=info['surname'], balance=info['balance'],
-                    password=password, turon_id=info['id'], role_id=role.id,
-                    age=datetime.datetime.now().year - int(info['birth_date'][:4]), father_name=info['father_name'],
+                    turon_id=info['id'], role_id=role.id,
+                    age=datetime.now().year - int(info['birth_date'][:4]), father_name=info['father_name'],
                     born_day=info['birth_date'][:2], system_name="school",
-                    parent_phone=info['parent_phone'], phone=info['phone'],
+                    parent_phone=info['parent_phone'] if 'parent_phone' in info else None, phone=info['phone_number'],
                     born_month=info['birth_date'][5:7], born_year=info['birth_date'][:4],
                     classroom_user_id=classroom_user_id)
         user.add_commit()
@@ -184,3 +184,5 @@ def check_user_turon(info):
             if subject not in role_instance.subjects:
                 role_instance.subjects.append(subject)
                 db.session.commit()
+    return user
+
