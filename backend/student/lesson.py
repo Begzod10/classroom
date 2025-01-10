@@ -48,7 +48,6 @@ def complete_exercise():
     for answer in answers:
         block = ExerciseBlock.query.filter(ExerciseBlock.id == answer['block_id']).first()
         exercise = Exercise.query.filter(Exercise.id == block.exercise_id).first()
-        print(block)
         exist_block = StudentExerciseBlock.query.filter(StudentExerciseBlock.lesson_id == lesson_id,
                                                         StudentExerciseBlock.student_id == student.id,
                                                         StudentExerciseBlock.block_id == block.id,
