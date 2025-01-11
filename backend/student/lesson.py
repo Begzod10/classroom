@@ -15,7 +15,7 @@ from sqlalchemy import or_
 @jwt_required()
 def finish_lesson(lesson_id):
     identity = get_jwt_identity()
-    user = User.query.filter_by(user_id=identity).first()
+    user = User.query.filter(User.classroom_user_id == identity).first()
     student = Student.query.filter(Student.user_id == user.id).first()
     student_lesson = StudentLesson.query.filter(StudentLesson.id == lesson_id,
                                                 StudentLesson.student_id == student.id).first()
@@ -258,8 +258,6 @@ def add_comment():
         ball=ball,
         date=date
     )
-
-    # Add and commit to the database
     try:
         new_comment.add()
         return jsonify({"message": "Comment added successfully!"}), 201

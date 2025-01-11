@@ -10,7 +10,7 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 def chapters_info(level_id):
     identity = get_jwt_identity()
 
-    user = User.query.filter_by(user_id=identity).first()
+    user = User.query.filter(User.classroom_user_id == identity).first()
     if request.method == "POST":
         name = request.get_json()['name']
         exist_chapter = Chapter.query.filter(Chapter.level_id == level_id).order_by(desc(Chapter.id)).first()

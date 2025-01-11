@@ -10,7 +10,7 @@ import requests
 @jwt_required()
 def info_level(subject_id):
     identity = get_jwt_identity()
-    user = User.query.filter_by(user_id=identity).first()
+    user = User.query.filter(User.classroom_user_id == identity).first()
     # if user.student:
     # subject_levels = SubjectLevel.query.filter(SubjectLevel.subject_id == subject_id,
     #                                            SubjectLevel.disabled == False,

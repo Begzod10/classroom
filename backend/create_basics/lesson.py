@@ -109,7 +109,7 @@ def lessons(level_id):
 @jwt_required()
 def info_lesson(chapter_id, order):
     identity = get_jwt_identity()
-    user = User.query.filter_by(user_id=identity).first()
+    user = User.query.filter(User.classroom_user_id == identity).first()
 
     lesson = Lesson.query.filter(Lesson.chapter_id == chapter_id, Lesson.order == order,
                                  Lesson.disabled != True).first()

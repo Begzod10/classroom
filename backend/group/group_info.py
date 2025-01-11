@@ -19,7 +19,7 @@ import hashlib
 @jwt_required()
 def get_groups():
     identity = get_jwt_identity()
-    user = User.query.filter_by(user_id=identity).first()
+    user = User.query.filter(User.classroom_user_id == identity).first()
     student = Student.query.filter(Student.user_id == user.id).first()
     teacher = Teacher.query.filter(Teacher.user_id == user.id).first()
 
@@ -58,7 +58,7 @@ def group_observer(group_id):
 @jwt_required()
 def group_profile(group_id, token):
     identity = get_jwt_identity()
-    user = User.query.filter_by(user_id=identity).first()
+    user = User.query.filter(User.classroom_user_id == identity).first()
     student = Student.query.filter(Student.user_id == user.id).first()
     group = Group.query.filter(Group.id == group_id).first()
     # if token:

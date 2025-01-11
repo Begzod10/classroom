@@ -10,8 +10,30 @@ from flask_jwt_extended import create_access_token, create_refresh_token
 def teacher_salary_info():
     identity = get_jwt_identity()
     user = User.query.filter(User.classroom_user_id == identity).first()
+
     if user.system_name == "gennis":
-        response = requests.get(f"{platform_server}/api/salary_info2/{user.platform_id}")
+        response = requests.get(f"{platform_server}/api/salary_info_classroom/{user.platform_id}")
+        print(response.json())
+        return jsonify(
+            response.json()
+        )
+    else:
+        response = requests.get(
+            f"{django_server}/api/Teachers/teacher-salary-info/{user.platform_id}/")
+        print(response.json())
+        return jsonify(
+            response.json()
+        )
+
+
+@app.route(f'{api}/block_salary/<location_id>/<year_id>')
+@jwt_required()
+def block_salary(location_id, year_id):
+    identity = get_jwt_identity()
+    user = User.query.filter(User.classroom_user_id == identity).first()
+    if user.system_name == "gennis":
+        response = requests.get(
+            f"{platform_server}/api/block_salary_classroom/{user.platform_id}/{location_id}/{year_id}")
         return jsonify(
             response.json()
         )

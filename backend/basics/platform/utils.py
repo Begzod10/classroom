@@ -58,6 +58,7 @@ def check_user_gennis(user_get):
                     balance=user_get['balance'],
                     password=user_get['password'], platform_id=user_get['id'],
                     role_id=role.id,
+                    system_name="gennis",
                     classroom_user_id=classroom_user_id,
                     age=user_get['age'], father_name=user_get['father_name'], born_day=user_get['born_day'],
                     born_month=user_get['born_month'], born_year=user_get['born_year'],
@@ -187,4 +188,3 @@ def check_user_turon(info):
                 role_instance.subjects.append(subject)
                 db.session.commit()
     return user
-

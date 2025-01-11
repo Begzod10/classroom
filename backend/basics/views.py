@@ -33,28 +33,36 @@ def create_token():
 def refresh():
     identity = get_jwt_identity()
     user = User.query.filter(User.classroom_user_id == identity).first()
-    print(user.username)
-    if user.system_name == "school":
-        if user.teacher:
-            response = requests.get(f"{django_server}/api/Teachers/get_balance/{user.turon_id}/", headers={
-                'Content-Type': 'application/json'
-            })
+    if user.role.type != "methodist":
+        if user.system_name == "school":
+            if user.teacher:
+                response = requests.get(f"{django_server}/api/Teachers/get_balance/{user.turon_id}/", headers={
+                    'Content-Type': 'application/json'
+                })
+            else:
+                response = requests.get(f"{platform_server}/api/Students/get_balance/{user.turon_id}/", headers={
+                    'Content-Type': 'application/json'
+                })
         else:
-            response = requests.get(f"{django_server}/api/Students/get_balance/{user.turon_id}/", headers={
-                'Content-Type': 'application/json'
-            })
+            if user.teacher:
+                response = requests.get(f"{platform_server}/api/get_teacher_balance/{user.platform_id}", headers={
+                    'Content-Type': 'application/json'
+                })
+            else:
+                response = requests.get(f"{platform_server}/api/get_student_balance/{user.platform_id}", headers={
+                    'Content-Type': 'application/json'
+                })
+
+        if response and response.json():
+            user.balance = response.json()['balance']
+            db.session.commit()
     else:
-        response = requests.get(f"{platform_server}/Teachers/get_balance/{user.platform_id}/", headers={
-            'Content-Type': 'application/json'
-        })
-    if 'balance' not in response.json():
-        user.balance = response.json()['balance']
-        db.session.commit()
+        response = None
     info = {
         "info": user.convert_json(),
         "access_token": create_access_token(identity=identity),
-        "refresh_token": create_refresh_token(identity=user.classroom_user_id),
-        "img": response.json()['profile_photo'] if "profile_photo" in response.json() else None
+        "refresh_token": create_refresh_token(identity=user.classroom_user_id)
+        # "img": response.json()['profile_photo'] if "profile_photo" in response.json() else None
     }
     return jsonify({
         "data": info

@@ -24,7 +24,7 @@ def get_subjects():
 @jwt_required()
 def info_subjects():
     identity = get_jwt_identity()
-    user = User.query.filter_by(user_id=identity).first()
+    user = User.query.filter_by(classroom_user_id=identity).first()
     subjects = Subject.query.filter(Subject.disabled != True).order_by(Subject.id).all()
     res = requests.post(f"{django_server}/api/Subjects/subject/", headers={
         'Content-Type': 'application/json'
@@ -96,7 +96,7 @@ def info_subjects():
 def subject(subject_id):
     # try:
     identity = get_jwt_identity()
-    user = User.query.filter(User.user_id == identity).first()
+    user = User.query.filter(User.classroom_user_id == identity).first()
 
     if user.student:
         subject_view = StudentSubject.query.filter(StudentSubject.subject_id == subject_id,
@@ -150,7 +150,7 @@ def edit_subject(subject_id):
 @jwt_required()
 def del_subject(subject_id):
     identity = get_jwt_identity()
-    user = User.query.filter_by(user_id=identity).first()
+    user = User.query.filter(User.classroom_user_id == identity).first()
     sub_name = Subject.query.filter(Subject.id == subject_id).first()
     name = sub_name.name
     sub_name.disabled = True
