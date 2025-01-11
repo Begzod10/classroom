@@ -1,7 +1,7 @@
 from app import api, app, request, jsonify, db, jwt_required, get_jwt_identity, platform_server, django_server
 from backend.models.basic_model import User, Student, Role, Subject, Teacher, StudentSubject
 import requests
-from .utils import check_group_info, check_user_gennis, check_user_turon
+from backend.basics.platform.utils import check_group_info, check_user_gennis, check_user_turon
 from flask_jwt_extended import create_access_token, create_refresh_token
 
 
@@ -34,6 +34,12 @@ def block_salary(location_id, year_id):
     if user.system_name == "gennis":
         response = requests.get(
             f"{platform_server}/api/block_salary_classroom/{user.platform_id}/{location_id}/{year_id}")
+        return jsonify(
+            response.json()
+        )
+    else:
+        response = requests.get(
+            f"{django_server}/api/Teacher/teacher-salary-list2/{user.platform_id}/")
         return jsonify(
             response.json()
         )
