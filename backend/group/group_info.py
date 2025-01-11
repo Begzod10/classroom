@@ -47,16 +47,21 @@ def get_groups():
 @app.route(f'{api}/group_observer/<group_id>')
 @jwt_required()
 def group_observer(group_id):
-    group = Group.query.filter(Group.platform_id == group_id).first()
+    identity = get_jwt_identity()
+    user = User.query.filter(User.classroom_user_id == identity).first()
+    if user.system_name == "gennis":
+        group = Group.query.filter(Group.platform_id == group_id).first()
+    else:
+        group = Group.query.filter(Group.turon_id == group_id).first()
     return jsonify({
-        "data": group.convert_json()
+        "data": group.convert_json() if group else "Group not found",
+        "status": True if group else False
     })
 
 
-@app.route(f'{api}/group_profile2/<int:group_id>/', defaults={"token": None})
-@app.route(f'{api}/group_profile2/<int:group_id>/<token>')
+@app.route(f'{api}/group_profile2/<int:group_id>')
 @jwt_required()
-def group_profile(group_id, token):
+def group_profile(group_id):
     identity = get_jwt_identity()
     user = User.query.filter(User.classroom_user_id == identity).first()
     student = Student.query.filter(Student.user_id == user.id).first()

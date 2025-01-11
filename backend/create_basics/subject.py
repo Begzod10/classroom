@@ -26,9 +26,9 @@ def info_subjects():
     identity = get_jwt_identity()
     user = User.query.filter_by(classroom_user_id=identity).first()
     subjects = Subject.query.filter(Subject.disabled != True).order_by(Subject.id).all()
-    res = requests.post(f"{django_server}/api/Subjects/subject/", headers={
-        'Content-Type': 'application/json'
-    }, json={"data": iterate_models(subjects)})
+    # res = requests.post(f"{django_server}/api/Subjects/subject/", headers={
+    #     'Content-Type': 'application/json'
+    # }, json={"data": iterate_models(subjects)})
     if request.method == "GET":
         if user.role.type == "methodist":
             subjects = Subject.query.filter(

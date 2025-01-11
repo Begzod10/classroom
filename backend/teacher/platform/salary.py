@@ -18,6 +18,7 @@ def teacher_salary_info():
         )
 
 
+@app.route(f"{api}/block_salary/", defaults={"location_id": None, "year_id": None}, methods=["GET"])
 @app.route(f'{api}/block_salary/<location_id>/<year_id>')
 @jwt_required()
 def block_salary(location_id, year_id):
@@ -63,17 +64,20 @@ def teacher_salary_inside(salary_id):
     identity = get_jwt_identity()
     user = User.query.filter(User.classroom_user_id == identity).first()
     if user.system_name == "gennis":
+
         response = requests.get(f"{platform_server}/api/teacher_salary_inside_classroom/{user.platform_id}/{salary_id}")
+
         return jsonify(
             response.json()
         )
-    # else:
-    #     response = requests.get(
-    #         f"{django_server}/api/Teachers/teacher-salary-list-month/{salary_id}/?status=}")
-    #     print(response.json())
-    #     return jsonify(
-    #         response.json()
-    #     )
+    else:
+        response = requests.get(
+            f"{django_server}/api/Teacher/teacher-salary-list2/{salary_id}/?status={status}")
+        print(response.json())
+
+        return jsonify(
+            response.json()
+        )
 
 
 @app.route(f'{api}/teacher_black_salary', methods=['GET'])
@@ -86,3 +90,28 @@ def teacher_black_salary():
         return jsonify(
             response.json()
         )
+
+
+@app.route(f'{api}/teacher_locations')
+@jwt_required()
+def teacher_locations():
+    indentity = get_jwt_identity()
+    user = User.query.filter(User.classroom_user_id == indentity).first()
+    if user.system_name == "gennis":
+        response = requests.get(f"{platform_server}/api/teacher_locations_classroom/{user.platform_id}")
+        return jsonify(
+            response.json()
+        )
+
+
+@app.route(f'{api}/user_time_table/<location_id>')
+@jwt_required()
+def user_time_table(location_id):
+    identity = get_jwt_identity()
+    user = User.query.filter(User.classroom_user_id == identity).first()
+    if user.system_name == "gennis":
+        response = requests.get(f"{platform_server}/api/user_time_table_classroom/{user.platform_id}/{location_id}")
+        return jsonify(
+            response.json()
+        )
+    pass
