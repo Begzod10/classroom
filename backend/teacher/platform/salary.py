@@ -26,6 +26,7 @@ def teacher_salary_info():
         )
 
 
+@app.route(f"{api}/block_salary/", defaults={"location_id": None, "year_id": None}, methods=["GET"])
 @app.route(f'{api}/block_salary/<location_id>/<year_id>')
 @jwt_required()
 def block_salary(location_id, year_id):
@@ -79,7 +80,7 @@ def teacher_salary_inside(salary_id, status):
         )
     else:
         response = requests.get(
-            f"{django_server}/api/Teachers/teacher-salary-list-month/{salary_id}/?status={status}")
+            f"{django_server}/api/Teacher/teacher-salary-list2/{salary_id}/?status={status}")
         print(response.json())
         return jsonify(
             response.json()
