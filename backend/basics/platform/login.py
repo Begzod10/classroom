@@ -12,7 +12,7 @@ def login():
     username = request.get_json()['username']
     password = request.get_json()['password']
     system_name = request.get_json()['system_name']
-    pprint(request.get_json())
+
     user = User.query.filter(User.username == username, system_name == system_name).first()
     if not user:
         if system_name == "gennis":
