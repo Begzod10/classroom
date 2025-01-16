@@ -22,6 +22,6 @@ SQLALCHEMY_ECO = True
 MAX_CONTENT_LENGTH = 15 * 1000 * 1000
 JWT_REFRESH_TOKEN_EXPIRES = timedelta(days=30)
 JWT_SECRET_KEY = "edu_system"
-JWT_ACCESS_TOKEN_EXPIRES = timedelta(hours=1)
+JWT_ACCESS_TOKEN_EXPIRES = timedelta(days=1)
 FLASK_ENV = "development"
 FLASK_DEBUG = 1

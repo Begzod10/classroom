@@ -1,4 +1,4 @@
-from app import api, app, request, jsonify, db, jwt_required, platform_server, get_jwt_identity
+from app import api, app, request, jsonify, db, jwt_required, platform_server, get_jwt_identity, django_server
 from backend.models.basic_model import Teacher, User, Group
 import requests
 
@@ -32,15 +32,20 @@ def group_dates2(group_id):
     if group.platform_id:
         response = requests.get(f"{platform_server}/api/group_dates2_classroom/{group.platform_id}")
         return jsonify(response.json())
+    else:
+        response = requests.get(f"{django_server}/api/Attendance/attendance-days-mobile/{group.turon_id}")
+        return jsonify(response.json())
+    pass
 
 
-@app.route(f'{api}/attendances/<group_id>')
+@app.route(f'{api}/attendances/<group_id>',methods=['GET','POST'])
 @jwt_required()
 def attendances(group_id):
     indentity = get_jwt_identity()
     user = User.query.filter(User.classroom_user_id == indentity).first()
 
     group = Group.query.filter(Group.id == group_id).first()
+    print(user.system_name)
     if user.system_name == "gennis":
         if request.method == 'GET':
             response = requests.get(f"{platform_server}/api/attendances_classroom/{group.platform_id}")
@@ -49,6 +54,14 @@ def attendances(group_id):
             response = requests.post(f"{platform_server}/api/attendances_classroom/{group.platform_id}",
                                      json=request.get_json())
             return jsonify(response.json())
+    else:
+        if request.method == 'GET':
+            response = requests.get(f"{django_server}/api/Attendance/attendance_list_school/{group.turon_id}/")
+            return jsonify(response.json())
+        else:
+            response = requests.post(f"{django_server}/api/Attendance/attendance_list_school/{group.turon_id}/",
+                                     json=request.get_json())
+        return jsonify(response.json())
 
 
 @app.route(f'{api}/group_time_table2/<group_id>')
@@ -59,5 +72,7 @@ def group_time_table(group_id):
     if user.system_name == "gennis":
         response = requests.get(f"{platform_server}/api/group_time_table_classroom/{group.platform_id}")
         return jsonify(response.json())
-
+    else:
+        response = requests.get(f"{django_server}/api/SchoolTimeTable/time_table_mobile/{group.turon_id}")
+        return jsonify(response.json())
     pass

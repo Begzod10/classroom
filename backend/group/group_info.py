@@ -253,9 +253,12 @@ def group_profile(group_id):
     })
 
 
-@app.route(f'{api}/set_observer/<int:user_id>')
-def set_observer(user_id):
-    user = User.query.filter(User.platform_id == user_id).first()
+@app.route(f'{api}/set_observer/<int:user_id>/<system_name>')
+def set_observer(user_id, system_name):
+    if system_name == "gennis":
+        user = User.query.filter(User.platform_id == user_id).first()
+    else:
+        user = User.query.filter(User.turon_id == user_id).first()
 
     user.observer = not user.observer
     db.session.commit()

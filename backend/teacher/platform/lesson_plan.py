@@ -17,14 +17,15 @@ def lesson_plan_list(group_id, date):
         return jsonify(response.json())
 
 
-@app.route(f'{api}/get_lesson_plan', methods=['POST'])
+@app.route(f'{api}/get_lesson_plan/<group_id>', methods=['POST'])
 @jwt_required()
-def get_lesson_plan():
+def get_lesson_plan(group_id):
     indentity = get_jwt_identity()
     user = User.query.filter(User.classroom_user_id == indentity).first()
+    group = Group.query.filter(Group.id == group_id).first()
     if user.system_name == "gennis":
         response = requests.post(
-            f"{platform_server}/api/get_lesson_plan_classroom", json=request.get_json())
+            f"{platform_server}/api/get_lesson_plan_classroom/{group.platform_id}", json=request.get_json())
         return jsonify(response.json())
     pass
 

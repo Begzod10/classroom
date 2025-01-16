@@ -104,6 +104,7 @@ def teacher_locations():
         )
 
 
+@app.route(f'{api}/user_time_table', defaults={"location_id": None})
 @app.route(f'{api}/user_time_table/<location_id>')
 @jwt_required()
 def user_time_table(location_id):

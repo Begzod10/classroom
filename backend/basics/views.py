@@ -40,7 +40,7 @@ def refresh():
                     'Content-Type': 'application/json'
                 })
             else:
-                response = requests.get(f"{platform_server}/api/Students/get_balance/{user.turon_id}/", headers={
+                response = requests.get(f"{django_server}/api/Students/get_balance/{user.turon_id}/", headers={
                     'Content-Type': 'application/json'
                 })
         else:
