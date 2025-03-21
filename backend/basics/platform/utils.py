@@ -1,3 +1,5 @@
+import pprint
+
 from backend.models.basic_model import Group, Subject, db, Role, User, StudentSubject, Student, Teacher
 from backend.models.settings import check_exist_classroom_id
 from datetime import datetime
@@ -10,7 +12,7 @@ def check_group_info(gr, type="gennis"):
     group = Group.query.filter(group_filter == gr['id']).first()
 
     # Common logic to create or update the group
-    print(gr)
+
     if not group:
         subject_name = gr['subjects']['name'] if type == "gennis" else None
 
@@ -50,7 +52,6 @@ def check_user_gennis(user_get):
         role = Role.query.filter(Role.type == "student", Role.role == "a43c33b82").first()
     else:
         role = Role.query.filter(Role.type == "teacher", Role.role == "b00c11a31").first()
-    print(role)
     user = User.query.filter(User.username == user_get['username'], User.system_name == "gennis").first()
     classroom_user_id = check_exist_classroom_id()
     if not user:
@@ -120,6 +121,7 @@ def check_user_gennis(user_get):
             subject = Subject.query.filter(Subject.id == group.subject_id).first()
             if subject not in teacher.subjects:
                 teacher.subjects.append(subject)
+                db.session.commit()
             db.session.commit()
         for gr in teacher.groups:
             if gr.platform_id not in group_list:
@@ -188,3 +190,65 @@ def check_user_turon(info):
                 role_instance.subjects.append(subject)
                 db.session.commit()
     return user
+
+
+def add_gennis_user_data(user_get, user):
+    student = Student.query.filter(Student.user_id == user.id).first()
+    teacher = Teacher.query.filter(Teacher.user_id == user.id).first()
+    if student:
+        Student.query.filter(Student.user_id == user.id).update({
+            "debtor": user_get['debtor'],
+        })
+        User.query.filter(User.id == user.id).update({
+            "name": user_get['name'],
+            "surname": user_get['surname'],
+            "father_name": user_get['father_name'],
+        })
+        db.session.commit()
+        for gr in user_get['group']:
+            group, _ = check_group_info(gr)
+            if group not in student.groups:
+                student.groups.append(group)
+                db.session.commit()
+            subject = Subject.query.filter(Subject.id == group.subject_id).first()
+            student_subject = StudentSubject.query.filter(StudentSubject.subject_id == subject.id,
+                                                          StudentSubject.student_id == student.id).first()
+            if not student_subject:
+                student_subject = StudentSubject(subject_id=subject.id, student_id=student.id)
+                student_subject.add_commit()
+        student_no_group = db.session.query(Group).join(Group.student).filter(Student.id == student.id,
+                                                                              Group.platform_id.notin_(
+                                                                                  [gr['id'] for gr in
+                                                                                   user_get[
+                                                                                       'group']])).all()
+
+        for gr in student_no_group:
+            student.groups.remove(gr)
+            group_get = Group.query.filter(Group.id == gr.id).first()
+            student_subject = StudentSubject.query.filter(StudentSubject.subject_id == group_get.subject_id,
+                                                          StudentSubject.student_id == student.id).first()
+            if student_subject:
+                db.session.delete(student_subject)
+                db.session.commit()
+            db.session.commit()
+    else:
+        for gr in user_get['group']:
+            group, _ = check_group_info(gr)
+            if group not in teacher.groups:
+                teacher.groups.append(group)
+                db.session.commit()
+            group.teacher_id = teacher.id
+            subject = Subject.query.filter(Subject.id == group.subject_id).first()
+            if subject not in teacher.subjects:
+                teacher.subjects.append(subject)
+                db.session.commit()
+
+        teacher_no_group = Group.query.filter(Group.teacher_id == teacher.id,
+                                              Group.platform_id.notin_([gr['id'] for gr in
+                                                                        user_get[
+                                                                            'group']])).all()
+
+        for gr in teacher_no_group:
+            if gr in teacher.groups:
+                teacher.groups.remove(gr)
+                db.session.commit()

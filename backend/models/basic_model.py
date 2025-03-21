@@ -239,7 +239,7 @@ class Teacher(db.Model):
     __tablename__ = "teacher"
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer, ForeignKey('user.id'))
-    groups = relationship("Group", secondary="teacher_group", backref="teacher", order_by="Group.id")
+    groups = relationship("Group", secondary="teacher_group", backref="teacher", order_by="Group.id", lazy="select")
     subjects = relationship("Subject", secondary="teacher_subject", backref="teacher", order_by="Subject.id")
 
     def add_commit(self):
@@ -280,3 +280,4 @@ from backend.essay_funtions.models import *
 from backend.question_answer.models import *
 from backend.certificate.models import *
 from backend.student.models import *
+from backend.pisa.models import *

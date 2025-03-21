@@ -34,16 +34,7 @@ def refresh():
     identity = get_jwt_identity()
     user = User.query.filter(User.classroom_user_id == identity).first()
     if user.role.type != "methodist":
-        if user.system_name == "school":
-            if user.teacher:
-                response = requests.get(f"{django_server}/api/Teachers/get_balance/{user.turon_id}/", headers={
-                    'Content-Type': 'application/json'
-                })
-            else:
-                response = requests.get(f"{django_server}/api/Students/get_balance/{user.turon_id}/", headers={
-                    'Content-Type': 'application/json'
-                })
-        else:
+        if user.system_name == "gennis":
             if user.teacher:
                 response = requests.get(f"{platform_server}/api/get_teacher_balance/{user.platform_id}", headers={
                     'Content-Type': 'application/json'
@@ -52,6 +43,17 @@ def refresh():
                 response = requests.get(f"{platform_server}/api/get_student_balance/{user.platform_id}", headers={
                     'Content-Type': 'application/json'
                 })
+        else:
+
+            if user.teacher:
+                response = requests.get(f"{django_server}/api/Teachers/get_balance/{user.turon_id}/", headers={
+                    'Content-Type': 'application/json'
+                })
+            else:
+                response = requests.get(f"{django_server}/api/Students/get_balance/{user.turon_id}/", headers={
+                    'Content-Type': 'application/json'
+                })
+
 
         if response and response.json():
             user.balance = response.json()['balance']

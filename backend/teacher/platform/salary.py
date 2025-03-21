@@ -1,5 +1,5 @@
 from app import api, app, request, jsonify, db, jwt_required, get_jwt_identity, platform_server, django_server
-from backend.models.basic_model import User, Student, Role, Subject, Teacher, StudentSubject
+from backend.models.basic_model import User, Student, Role, Subject, Teacher, StudentSubject, Group
 import requests
 from backend.basics.platform.utils import check_group_info, check_user_gennis, check_user_turon
 from flask_jwt_extended import create_access_token, create_refresh_token
@@ -104,14 +104,26 @@ def teacher_locations():
         )
 
 
-@app.route(f'{api}/user_time_table', defaults={"location_id": None})
-@app.route(f'{api}/user_time_table/<location_id>')
+@app.route(f'{api}/user_time_table/', defaults={"location_id": None})
+@app.route(f'{api}/user_time_table/<location_id>/')
 @jwt_required()
 def user_time_table(location_id):
     identity = get_jwt_identity()
     user = User.query.filter(User.classroom_user_id == identity).first()
+    student = Student.query.filter(Student.user_id == user.id).first()
+    teacher = Teacher.query.filter(Teacher.user_id == user.id).first()
     if user.system_name == "gennis":
         response = requests.get(f"{platform_server}/api/user_time_table_classroom/{user.platform_id}/{location_id}")
+        return jsonify(
+            response.json()
+        )
+    else:
+        if student:
+            group_id = student.groups[0].id
+        else:
+            group_id = teacher.groups[0].id
+        group = Group.query.filter(Group.id == group_id).first()
+        response = requests.get(f"{django_server}/api/SchoolTimeTable/time_table_mobile/{group.turon_id}")
         return jsonify(
             response.json()
         )

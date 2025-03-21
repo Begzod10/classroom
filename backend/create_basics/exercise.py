@@ -15,7 +15,6 @@ def info_exercise():
         info = request.form.get("info")
         get_json = json.loads(info)
         selected_level = get_json['selectedLevel']
-        print(selected_level)
         selected_subject = get_json['selectedSubject']
         name = get_json['title']
         exercise_type = get_json['typeEx']

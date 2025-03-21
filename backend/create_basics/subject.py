@@ -1,7 +1,7 @@
 from app import api, app, cross_origin, db, request, jsonify, platform_server, or_, contains_eager, django_server
 
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from backend.models.basic_model import Teacher, File, Group, StudentSubject
+from backend.models.basic_model import Teacher, File, Group, StudentSubject, Chapter, SubjectLevel, StudentChapter
 from backend.basics.settings import edit_msg, add_file, check_file, check_img_remove, create_msg, del_msg
 from backend.models.settings import User, Subject, Student, send_subject_server, iterate_models
 import requests
@@ -26,9 +26,12 @@ def info_subjects():
     identity = get_jwt_identity()
     user = User.query.filter_by(classroom_user_id=identity).first()
     subjects = Subject.query.filter(Subject.disabled != True).order_by(Subject.id).all()
-    # res = requests.post(f"{django_server}/api/Subjects/subject/", headers={
+    # requests.post(f"{django_server}/api/Subjects/subject/", headers={
     #     'Content-Type': 'application/json'
     # }, json={"data": iterate_models(subjects)})
+    requests.post(f"{platform_server}/api/subjects_add", headers={
+        'Content-Type': 'application/json'
+    }, json={"data": iterate_models(subjects)})
     if request.method == "GET":
         if user.role.type == "methodist":
             subjects = Subject.query.filter(
@@ -99,8 +102,26 @@ def subject(subject_id):
     user = User.query.filter(User.classroom_user_id == identity).first()
 
     if user.student:
+        student = Student.query.filter(Student.user_id == user.id).first()
         subject_view = StudentSubject.query.filter(StudentSubject.subject_id == subject_id,
                                                    StudentSubject.student_id == user.student.id).first()
+        # subject_level = SubjectLevel.query.filter(SubjectLevel.subject_id == subject_id,
+        #                                           ).all()
+        # print("student")
+        # for level in subject_level:
+        #     chapters = Chapter.query.filter(Chapter.level_id == level.id, Chapter.status == True).order_by(
+        #         Chapter.order).all()
+        #     for chapter in chapters:
+        #         exist_chapter = StudentChapter.query.filter(StudentChapter.chapter_id == chapter.id,
+        #                                                     StudentChapter.student_id == student.id,
+        #                                                     StudentChapter.level_id == chapter.level_id).first()
+        #         if not exist_chapter:
+        #             exist_chapter = StudentChapter(level_id=chapter.level_id, chapter_id=chapter.id,
+        #                                            student_id=student.id, order=chapter.order)
+        #             exist_chapter.add()
+        #         else:
+        #             exist_chapter.order = chapter.order
+        #             db.session.commit()
     else:
         subject_view = Subject.query.filter(Subject.id == subject_id).first()
     return jsonify({

@@ -14,33 +14,15 @@ from flask_jwt_extended import JWTManager, create_refresh_token, get_jwt_identit
 app = Flask(__name__, static_folder="frontend/build", static_url_path="/")
 cors = CORS(app, resources={r"/api/*": {"origins": "*"}})
 
-# CORS(app, supports_credentials=True, resources=r'/api/*',
-#      allow_headers=["Content-Type", "Authorization", "Access-Control-Allow-Credentials"])
-# cors_api1 = {
-#     "origins": ['http://192.168.1.13:5001/api/'],
-#     "methods": ['POST', 'GET', 'OPTIONS'],
-#     "allow_headers": ["Authorization", "Content-Type"]
-# }
-# cors_api2 = {
-#     "origins": ['http://192.168.1.13:5001/api/'],
-#     "methods": ['POST', 'GET', 'OPTIONS'],
-#     "allow_headers": ["Authorization", "Content-Type"]
-# }
-# CORS(app, resources={
-#     r'/api/*': cors_api1
-# })
-
 app.config.from_object('backend.models.config')
 db = db_setup(app)
 migrate = Migrate(app, db)
 jwt = JWTManager(app)
 api = '/api'
-# platform_server = 'https://gennis.uz'
-platform_server = 'http://192.168.1.61:5002'
-# platform_server = "http://192.168.0.108:5002"
-# django_server = "http://192.168.1.61:8000"
-# django_server = "https://school.gennis.uz"
-django_server = "http://192.168.1.14:7622"
+# platform_server = 'https://admin.gennis.uz'
+platform_server = "http://192.168.1.61:5002"
+django_server = "https://school.gennis.uz"
+# django_server = "http://192.168.1.14:7622"
 
 # basics
 from backend.basics.views import *
@@ -64,6 +46,9 @@ from backend.class_test.views import *
 
 # mobile
 from backend.mobile.views import *
+
+# pisa
+from backend.pisa.api.views import *
 
 if __name__ == '__main__':
     app.run()

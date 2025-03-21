@@ -45,6 +45,7 @@ def chapters_info(level_id):
                 else:
                     exist_chapter.order = chapter.order
                     db.session.commit()
+                print(exist_chapter)
                 for lesson in chapter.lesson:
                     if not lesson.disabled:
                         student_lesson = StudentLesson.query.filter(StudentLesson.lesson_id == lesson.id,
@@ -59,13 +60,13 @@ def chapters_info(level_id):
                             student_lesson.add_commit()
                         else:
                             student_lesson.order = lesson.order
-            # chapters = StudentChapter.query.filter(
-            #     StudentChapter.student_id == student.id,
-            #     StudentChapter.level_id == level_id).order_by(
-            #     StudentChapter.order).all()
-            chapters = db.session.query(StudentChapter).join(StudentChapter.chapter).filter(
-                Chapter.status == True, StudentChapter.student_id == student.id,
-                StudentChapter.level_id == level_id).all()
+            chapters = StudentChapter.query.filter(
+                StudentChapter.student_id == student.id,
+                StudentChapter.level_id == level_id).order_by(
+                StudentChapter.order).all()
+            # chapters = db.session.query(StudentChapter).join(StudentChapter.chapter).filter(
+            #     Chapter.status == True, StudentChapter.student_id == student.id,
+            #     StudentChapter.level_id == level_id).all()
         return jsonify({
             "chapters": iterate_models(chapters, entire=True)
         })

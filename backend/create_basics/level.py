@@ -20,11 +20,11 @@ def info_level(subject_id):
                                                SubjectLevel.disabled == False).order_by(SubjectLevel.id).all()
     server_levels = SubjectLevel.query.order_by(
         SubjectLevel.id).all()
-    send_subject_server("levels", platform_server, server_levels)
-    subjects = SubjectLevel.query.order_by(SubjectLevel.id).all()
-    requests.post(f"{django_server}/api/Subjects/subject_level_create/", headers={
-        'Content-Type': 'application/json'
-    }, json={"data": iterate_models(subjects)})
+    # send_subject_server("levels", platform_server, server_levels)
+    # subjects = SubjectLevel.query.order_by(SubjectLevel.id).all()
+    # requests.post(f"{django_server}/api/Subjects/subject_level_create/", headers={
+    #     'Content-Type': 'application/json'
+    # }, json={"data": iterate_models(subjects)})
     if user.student:
         student = Student.query.filter(Student.user_id == user.id).first()
         student_level = StudentLevel.query.filter(StudentLevel.subject_id == subject_id,

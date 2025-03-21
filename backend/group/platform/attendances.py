@@ -22,7 +22,7 @@ def make_attendance_classroom():
         response = requests.post(f"{platform_server}/api/make_attendance_classroom",
                                  json=request.get_json())
         return jsonify(response.json())
-    pass
+
 
 
 @app.route(f'{api}/group_dates2/<int:group_id>')
