@@ -16,6 +16,10 @@ def crud_pisa_test(pk):
         pisa_test = Pisa.query.filter_by(id=pk).first()
         pisa_test.name = request.get_json()['name']
         pisa_test.status = request.get_json()['status']
+        other_pisa_tests = Pisa.query.filter(Pisa.id != pisa_test.id).all()
+        for other_pisa_test in other_pisa_tests:
+            other_pisa_test.status = False
+            db.session.commit()
         db.session.commit()
         return jsonify({"msg": "pisa muvaffaqiyatli o'zgartirildi", "success": True})
     elif request.method == "DELETE":

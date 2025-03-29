@@ -80,6 +80,7 @@ def pisa_block_questions(pk):
         img = request.files.get('img')
         file_id = None
         app.config['UPLOAD_FOLDER'] = img_folder()
+        pprint.pprint(load_json)
         if img:
             filename = secure_filename(img.filename)
             url = img_url() + "/" + filename
@@ -130,31 +131,31 @@ def pisa_block_questions(pk):
             options = PisaBlockQuestionOptions.query.filter_by(pisa_block_id=pisa_block.id).all()
             for option in options:
                 option.delete()
-
-        for index, option in enumerate(load_json['variants']['options']):
-            image = request.files.get(f'img-index-{index}')
-            if image:
-                filename = secure_filename(image.filename)
-                url = img_url() + "/" + filename
-                image.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-                file = PisaFileType(url=url, file_type='image')
-                file.add()
-                PisaBlockQuestionOptions(
-                    index=index,  # Auto-generated index (0, 1, 2...)
-                    text=option['text'],
-                    pisa_block_id=pisa_block.id,
-                    innerType=option['innerType'],
-                    isTrue=option['isTrue'],
-                    file_id=file.id
-                ).add()
-            else:
-                PisaBlockQuestionOptions(
-                    index=index,
-                    text=option['text'],
-                    pisa_block_id=pisa_block.id,
-                    innerType=option['innerType'],
-                    isTrue=option['isTrue']
-                ).add()
+        if 'options' in load_json['variants']:
+            for index, option in enumerate(load_json['variants']['options']):
+                image = request.files.get(f'img-index-{index}')
+                if image:
+                    filename = secure_filename(image.filename)
+                    url = img_url() + "/" + filename
+                    image.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+                    file = PisaFileType(url=url, file_type='image')
+                    file.add()
+                    PisaBlockQuestionOptions(
+                        index=index,  # Auto-generated index (0, 1, 2...)
+                        text=option['text'],
+                        pisa_block_id=pisa_block.id,
+                        innerType=option['innerType'],
+                        isTrue=option['isTrue'],
+                        file_id=file.id
+                    ).add()
+                else:
+                    PisaBlockQuestionOptions(
+                        index=index,
+                        text=option['text'],
+                        pisa_block_id=pisa_block.id,
+                        innerType=option['innerType'],
+                        isTrue=option['isTrue']
+                    ).add()
         if 'answer' in load_json['variants']:
             PisaBlockQuestionOptions(answer=load_json['variants']['answer'], pisa_block_id=pisa_block.id).add()
         if request.method == "POST":

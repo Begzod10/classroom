@@ -12,6 +12,8 @@ class Pisa(db.Model):
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
     deleted = Column(Boolean, default=False)
+    tests = relationship('PisaTest', backref='pisa', order_by="PisaTest.id")
+    total_questions = Column(Integer)
 
     def add(self):
         db.session.add(self)
@@ -59,6 +61,12 @@ class PisaBlockText(db.Model):
     type_question = Column(String)
     video_url = Column(String)
     innerType = Column(String)
+    answers = relationship('PisaBlockTextAnswer', backref='block_text', order_by="PisaBlockTextAnswer.index")
+    options = relationship('PisaBlockQuestionOptions', backref='block_text', order_by="PisaBlockQuestionOptions.index")
+    answers_students = relationship('PisaBlockTextAnswerStudent', backref='block_text',
+                                    order_by="PisaBlockTextAnswerStudent.id")
+    options_students = relationship('PisaBlockOptionsStudent', backref='block_text',
+                                    order_by="PisaBlockOptionsStudent.id")
 
     def convert_json(self, entire=False):
         return {"id": self.id, "pisa_id": self.pisa_id, "file_id": self.file_id, "position": self.position,
@@ -127,9 +135,10 @@ class PisaStudent(db.Model):
     __tablename__ = "pisa_student"
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer, ForeignKey('user.id'))
-    school = Column(String)
     grade = Column(String)
     address = Column(String)
+    school_id = Column(Integer, ForeignKey('school.id'))
+    tests = relationship('PisaTest', backref='student_pisa', order_by="PisaTest.id")
 
     def add(self):
         db.session.add(self)
@@ -149,6 +158,18 @@ class PisaTest(db.Model):
     false_answers = Column(Integer)
     result = Column(Integer)
     test_date = Column(DateTime, default=datetime.datetime.utcnow)
+    total_questions = Column(Integer)
+    finished = Column(Boolean, default=False)
+
+    def convert_json(self, entire=False):
+        return {"id": self.id, "student_id": self.student_id, "pisa_id": self.pisa_id,
+                "true_answers": self.true_answers,
+                "school_id": self.student_pisa.school_id,
+                "school_name": self.student_pisa.school.name,
+                "false_answers": self.false_answers, "result": self.result, "test_date": self.test_date,
+                "total_questions": self.total_questions, "name": self.student_pisa.user.name,
+                "finished": self.finished,
+                "surname": self.student_pisa.user.surname}
 
     def add(self):
         db.session.add(self)
@@ -164,8 +185,16 @@ class PisaBlockOptionsStudent(db.Model):
     id = Column(Integer, primary_key=True)
     pisa_block_question_options_id = Column(Integer, ForeignKey('pisa_block_question_options.id'))
     pisa_test_id = Column(Integer, ForeignKey('pisa_test.id'))
+    pisa_block_text_id = Column(Integer, ForeignKey('pisa_block_text.id'))
+    student_id = Column(Integer, ForeignKey('pisa_student.id'))
     text = Column(String)
+    isTrue = Column(Boolean)
     answer = Column(String)
+
+    def convert_json(self, entire=False):
+        return {"id": self.id, "pisa_block_question_options_id": self.pisa_block_question_options_id,
+                "pisa_test_id": self.pisa_test_id, "pisa_block_text_id": self.pisa_block_text_id,
+                "student_id": self.student_id, "text": self.text, "isTrue": self.isTrue, "answer": self.answer}
 
     def add(self):
         db.session.add(self)
@@ -181,9 +210,17 @@ class PisaBlockTextAnswerStudent(db.Model):
     id = Column(Integer, primary_key=True)
     pisa_block_text_id = Column(Integer, ForeignKey('pisa_block_text.id'))
     pisa_test_id = Column(Integer, ForeignKey('pisa_test.id'))
+    student_id = Column(Integer, ForeignKey('pisa_student.id'))
+    text_answer_id = Column(Integer, ForeignKey('pisa_block_text_answer.id'))
     text = Column(String)
     statusWord = Column(String)
     type = Column(String)
+    status = Column(Boolean, default=False)
+
+    def convert_json(self, entire=False):
+        return {"id": self.id, "pisa_block_text_id": self.pisa_block_text_id, "pisa_test_id": self.pisa_test_id,
+                "student_id": self.student_id, "text_answer_id": self.text_answer_id, "text": self.text,
+                "statusWord": self.statusWord, "type": self.type, "status": self.status}
 
     def add(self):
         db.session.add(self)
@@ -192,3 +229,31 @@ class PisaBlockTextAnswerStudent(db.Model):
     def delete(self):
         db.session.delete(self)
         db.session.commit()
+
+
+class School(db.Model):
+    __tablename__ = "school"
+    id = Column(Integer, primary_key=True)
+    number = Column(Integer)
+    name = Column(String)
+    pisa_students = relationship('PisaStudent', backref='school', order_by="PisaStudent.id")
+
+    def add(self):
+        db.session.add(self)
+        db.session.commit()
+
+    def delete(self):
+        db.session.delete(self)
+        db.session.commit()
+
+    def convert_json(self, entire=False):
+        return {"id": self.id, "number": self.number, "name": self.name}
+
+
+def create_school():
+    for i in range(1, 81):
+        school = School.query.filter_by(number=i).first()
+        if not school:
+            new_school = School(number=i, name=f"{i} - Maktab")
+            db.session.add(new_school)
+    db.session.commit()

@@ -20,7 +20,7 @@ migrate = Migrate(app, db)
 jwt = JWTManager(app)
 api = '/api'
 # platform_server = 'https://admin.gennis.uz'
-platform_server = "http://192.168.1.15:5002"
+platform_server = "http://192.168.1.61:5002"
 django_server = "https://school.gennis.uz"
 # django_server = "http://192.168.1.14:7622"
 
