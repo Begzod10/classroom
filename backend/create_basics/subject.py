@@ -29,9 +29,9 @@ def info_subjects():
     # requests.post(f"{django_server}/api/Subjects/subject/", headers={
     #     'Content-Type': 'application/json'
     # }, json={"data": iterate_models(subjects)})
-    requests.post(f"{platform_server}/api/subjects_add", headers={
-        'Content-Type': 'application/json'
-    }, json={"data": iterate_models(subjects)})
+    # requests.post(f"{platform_server}/api/subjects_add", headers={
+    #     'Content-Type': 'application/json'
+    # }, json={"data": iterate_models(subjects)})
     if request.method == "GET":
         if user.role.type == "methodist":
             subjects = Subject.query.filter(

@@ -226,7 +226,7 @@ def exercise_profile(exercise_id):
             get_file = None
             if word_img:
                 get_file = add_file(word_img, type_file="img", app=app, File=File)
-            pprint(audio_url)
+
             inner_type = ''
             clone = component
             if 'editorState' in component:

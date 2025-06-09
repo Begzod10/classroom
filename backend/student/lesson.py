@@ -29,7 +29,7 @@ def finish_lesson(lesson_id):
 @jwt_required()
 def complete_exercise():
     identity = get_jwt_identity()
-    user = User.query.filter_by(user_id=identity).first()
+    user = User.query.filter(User.classroom_user_id == identity).first()
     answers = request.get_json()['block']
     lesson_id = request.get_json()['lessonId']
     exercise_id = request.get_json()['excId']

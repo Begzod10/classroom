@@ -56,7 +56,7 @@ def get_pisa_list():
     pisa_list = []
     for pisa in pisa_tests:
         pisa_test = PisaTest.query.filter(PisaTest.pisa_id == pisa.id,
-                                          PisaTest.student_id == pisa_student.id).first()
+                                          PisaTest.student_id == pisa_student.id).first() if pisa_student else None
 
         info = {
             "id": pisa.id,
@@ -76,7 +76,7 @@ def get_pisa_test(pk):
     pisa_student = PisaStudent.query.filter(PisaStudent.user_id == user.id).first()
     pisa_test_student = PisaTest.query.filter(PisaTest.pisa_id == pk,
                                               PisaTest.student_id == pisa_student.id).first() if pisa_student else None
-    if pisa_test_student and pisa_test.finished:
+    if pisa_test_student and pisa_test_student.finished:
         return jsonify({"success": False, "msg": "Pisa test bajarilib bolingan!"}), 200
     pisa_blocks_left = PisaBlockText.query.filter(PisaBlockText.pisa_id == pisa_test.id,
                                                   PisaBlockText.position == 'left').order_by(
@@ -369,6 +369,7 @@ def complete_pisa_test(pk):
 @jwt_required()
 def show_results(pisa_test_id):
     user = User.query.filter(User.classroom_user_id == get_jwt_identity()).first()
+
     pisa_student = PisaStudent.query.filter(PisaStudent.user_id == user.id).first()
     pisa_test = PisaTest.query.filter(PisaTest.pisa_id == pisa_test_id, PisaTest.student_id == pisa_student.id).first()
     pisa_test.finished = True

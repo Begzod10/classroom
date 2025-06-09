@@ -15,7 +15,7 @@ def login():
     system_name = request.get_json()['system_name'] if "system_name" in request.get_json() else ""
 
     user = User.query.filter(User.username == username, system_name == system_name).first()
-    if system_name:
+    if system_name and username != "methodist":
         if system_name == "gennis":
             response = requests.post(f"{platform_server}/api/login2", headers={
                 'Content-Type': 'application/json'
@@ -56,6 +56,8 @@ def login():
         user.system_name = system_name
         db.session.commit()
     else:
+        user.classroom_user_id = "746fd4f7d00311efa46700155d96426c"
+        db.session.commit()
         if user and check_password_hash(user.password, password):
             return jsonify({
                 "data": {

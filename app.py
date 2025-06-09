@@ -10,6 +10,7 @@ import os
 import json
 from flask_jwt_extended import JWTManager, create_refresh_token, get_jwt_identity, create_access_token, \
     unset_jwt_cookies, jwt_required
+from flask_admin import Admin
 
 app = Flask(__name__, static_folder="frontend/build", static_url_path="/")
 cors = CORS(app, resources={r"/api/*": {"origins": "*"}})
@@ -19,10 +20,17 @@ db = db_setup(app)
 migrate = Migrate(app, db)
 jwt = JWTManager(app)
 api = '/api'
-# platform_server = 'https://admin.gennis.uz'
-platform_server = "http://192.168.1.15:5002"
+platform_server = 'https://admin.gennis.uz'
+# platform_server = "http://192.168.1.15:5002"
 django_server = "https://school.gennis.uz"
 # django_server = "http://192.168.1.14:7622"
+
+admin = Admin(
+    app,
+    name='Gennis',
+    template_mode='bootstrap3',
+    static_url_path='/flask_static'
+)
 
 # basics
 from backend.basics.views import *
@@ -49,6 +57,14 @@ from backend.mobile.views import *
 
 # pisa
 from backend.pisa.api.views import *
+
+from backend.models.views import *
+
+
+@app.route('/flask_static/<path:filename>')
+def flask_admin_static(filename):
+    return send_from_directory('static', filename)
+
 
 if __name__ == '__main__':
     app.run()
