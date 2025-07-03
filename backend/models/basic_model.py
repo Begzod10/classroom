@@ -5,16 +5,18 @@ from sqlalchemy.orm import contains_eager
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func, functions
 from sqlalchemy.dialects.postgresql import ARRAY
+from backend.extentions import db
 
-db = SQLAlchemy()
 
-
-def db_setup(app):
-    app.config.from_object('backend.models.config')
-    db.app = app
-    db.init_app(app)
-    Migrate(app, db)
-    return db
+# db = SQLAlchemy()
+#
+#
+# def db_setup(app):
+#     app.config.from_object('backend.models.config')
+#     db.app = app
+#     db.init_app(app)
+#     Migrate(app, db)
+#     return db
 
 
 class Location(db.Model):
@@ -27,6 +29,12 @@ class Location(db.Model):
     def add_commit(self):
         db.session.add(self)
         db.session.commit()
+
+    def convert_json(self, entire=False):
+        return {
+            "id": self.id,
+            "name": self.name
+        }
 
 
 class Role(db.Model):

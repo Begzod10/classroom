@@ -1,7 +1,7 @@
 import pprint
 
 from backend.models.basic_model import User, File
-from app import api, app, request, jsonify, db, jwt_required, get_jwt_identity, platform_server, django_server
+from app import api, app, request, jsonify, db, jwt_required, get_jwt_identity, gennis_server_url, turon_server_url
 from werkzeug.security import generate_password_hash, check_password_hash
 from backend.basics.settings import create_msg, edit_msg, del_msg, check_file, check_img_remove, add_file
 import requests
@@ -36,7 +36,7 @@ def change_pas_user():
         })
         db.session.commit()
         if user.system_name == "gennis":
-            response = requests.post(f"{platform_server}/api/change_student_classroom/{user.platform_id}", headers={
+            response = requests.post(f"{gennis_server_url}/api/change_student_classroom/{user.platform_id}", headers={
                 'Content-Type': 'application/json'
             }, json={
                 "username": json['username'],
@@ -49,7 +49,7 @@ def change_pas_user():
         User.query.filter(User.classroom_user_id == indentity).update({'password': hash})
         db.session.commit()
         if user.system_name == "gennis":
-            response = requests.post(f"{platform_server}/api/change_student_password/{user.platform_id}", headers={
+            response = requests.post(f"{gennis_server_url}/api/change_student_password/{user.platform_id}", headers={
                 'Content-Type': 'application/json'
             }, json={
                 "password": password,
@@ -79,13 +79,13 @@ def check_username():
     username = request.get_json()['username']
     user = User.query.filter_by(classroom_user_id=indentity).first()
     if user.system_name == "gennis":
-        response = requests.post(f"{platform_server}/api/check_exist_username/{user.platform_id}",
+        response = requests.post(f"{gennis_server_url}/api/check_exist_username/{user.platform_id}",
                                  json={
                                      "username": username
                                  })
         return jsonify(response.json())
     else:
-        response = requests.post(f"{django_server}/api/Users/username-check/", json={
+        response = requests.post(f"{turon_server_url}/api/Users/username-check/", json={
             "username": username
         })
         return jsonify(response.json())

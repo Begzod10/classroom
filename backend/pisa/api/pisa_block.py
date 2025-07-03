@@ -1,15 +1,21 @@
 import pprint
 
-from app import app, db, api, request, jsonify, iterate_models
+from app import current_app, db, api, request, jsonify
 from backend.models.basic_model import PisaBlockText, PisaBlockTextAnswer, PisaBlockQuestionOptions, PisaFileType, desc
 import os
 from werkzeug.utils import secure_filename
 from backend.basics.settings import img_url, img_folder, file_url, file_folder
 import json
+from flask import Blueprint
+from backend.models.settings import iterate_models
+
+pisa_block_bp = Blueprint("block", __name__)
 
 
-@app.route(f'{api}/pisa_block_text/', defaults={'pk': None}, methods=['GET', 'POST', 'PUT', 'DELETE'])
-@app.route(f'{api}/pisa_block_text/<pk>', methods=['GET', 'POST', 'PUT', 'DELETE'])
+# @app.route(f'{api}/pisa_block_text/', defaults={'pk': None}, methods=['GET', 'POST', 'PUT', 'DELETE'])
+# @app.route(f'{api}/pisa_block_text/<pk>', methods=['GET', 'POST', 'PUT', 'DELETE'])
+@pisa_block_bp.route(f'/text/', defaults={'pk': None}, methods=['GET', 'POST', 'PUT', 'DELETE'])
+@pisa_block_bp.route(f'/text/<pk>', methods=['GET', 'POST', 'PUT', 'DELETE'])
 def pisa_block_text(pk):
     if request.method == "POST":
 
@@ -69,8 +75,11 @@ def pisa_block_text(pk):
         return jsonify({"msg": "ID yuvor suka", "success": False})
 
 
-@app.route(f'{api}/pisa_block_questions/', defaults={'pk': None}, methods=['GET', 'POST', 'PUT', 'DELETE'])
-@app.route(f'{api}/pisa_block_questions/<pk>', methods=['GET', 'POST', 'PUT', 'DELETE'])
+# @app.route(f'{api}/pisa_block_questions/', defaults={'pk': None}, methods=['GET', 'POST', 'PUT', 'DELETE'])
+# @app.route(f'{api}/pisa_block_questions/<pk>', methods=['GET', 'POST', 'PUT', 'DELETE'])
+
+@pisa_block_bp.route(f'/questions/', defaults={'pk': None}, methods=['GET', 'POST', 'PUT', 'DELETE'])
+@pisa_block_bp.route(f'/questions/<pk>', methods=['GET', 'POST', 'PUT', 'DELETE'])
 def pisa_block_questions(pk):
     if request.method == "POST" or request.method == "PUT":
         info = request.form.get('info') if 'info' in request.form else None
@@ -79,12 +88,12 @@ def pisa_block_questions(pk):
         pisa_id = load_json['pisaId']
         img = request.files.get('img')
         file_id = None
-        app.config['UPLOAD_FOLDER'] = img_folder()
-        pprint.pprint(load_json)
+        current_app.config['UPLOAD_FOLDER'] = img_folder()
+
         if img:
             filename = secure_filename(img.filename)
             url = img_url() + "/" + filename
-            img.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+            img.save(os.path.join(current_app.config['UPLOAD_FOLDER'], filename))
             file = PisaFileType(url=url, file_type='image')
             file.add()
             file_id = file.id
@@ -137,7 +146,7 @@ def pisa_block_questions(pk):
                 if image:
                     filename = secure_filename(image.filename)
                     url = img_url() + "/" + filename
-                    image.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+                    image.save(os.path.join(current_app.config['UPLOAD_FOLDER'], filename))
                     file = PisaFileType(url=url, file_type='image')
                     file.add()
                     PisaBlockQuestionOptions(
@@ -175,8 +184,11 @@ def pisa_block_questions(pk):
         return jsonify({"msg": "ID yuvor suka", "success": False})
 
 
-@app.route(f'{api}/pisa_block_infos', defaults={'pk': None}, methods=['GET', 'POST', 'PUT', 'DELETE'])
-@app.route(f'{api}/pisa_block_infos/<pk>', methods=['GET', 'POST', 'PUT', 'DELETE'])
+# @app.route(f'{api}/pisa_block_infos', defaults={'pk': None}, methods=['GET', 'POST', 'PUT', 'DELETE'])
+# @app.route(f'{api}/pisa_block_infos/<pk>', methods=['GET', 'POST', 'PUT', 'DELETE'])
+
+@pisa_block_bp.route(f'/infos', defaults={'pk': None}, methods=['GET', 'POST', 'PUT', 'DELETE'])
+@pisa_block_bp.route(f'/infos/<pk>', methods=['GET', 'POST', 'PUT', 'DELETE'])
 def pisa_block_infos(pk):
     if request.method == "POST" or request.method == "PUT":
         info = request.form.get('info') if 'info' in request.form else None
@@ -195,18 +207,18 @@ def pisa_block_infos(pk):
         innerType = load_json['innerType'] if 'innerType' in load_json else None
         file_id = None
         if img:
-            app.config['UPLOAD_FOLDER'] = img_folder()
+            current_app.config['UPLOAD_FOLDER'] = img_folder()
             filename = secure_filename(img.filename)
             url = img_url() + "/" + filename
-            img.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+            img.save(os.path.join(current_app.config['UPLOAD_FOLDER'], filename))
             file = PisaFileType(url=url, file_type='image')
             file.add()
             file_id = file.id
         if file_get:
-            app.config['UPLOAD_FOLDER'] = file_folder()
+            current_app.config['UPLOAD_FOLDER'] = file_folder()
             filename = secure_filename(file_get.filename)
             url = file_url() + "/" + filename
-            file_get.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+            file_get.save(os.path.join(current_app.config['UPLOAD_FOLDER'], filename))
             file = PisaFileType(url=url, file_type='file')
             file.add()
             file_id = file.id

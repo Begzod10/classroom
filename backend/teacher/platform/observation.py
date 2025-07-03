@@ -1,4 +1,4 @@
-from app import api, app, request, jsonify, db, jwt_required, get_jwt_identity, platform_server
+from app import api, app, request, jsonify, db, jwt_required, get_jwt_identity, gennis_server_url
 from backend.models.basic_model import Teacher, User, Group
 import requests
 
@@ -9,7 +9,7 @@ def observe_info():
     indentity = get_jwt_identity()
     user = User.query.filter(User.classroom_user_id == indentity).first()
     if user.system_name == "gennis":
-        response = requests.get(f"{platform_server}/api/observe_info_classroom")
+        response = requests.get(f"{gennis_server_url}/api/observe_info_classroom")
         return jsonify(response.json())
     pass
 
@@ -23,12 +23,12 @@ def groups_to_observe(location_id):
     if user.system_name == "gennis":
         if request.method == 'POST':
             response = requests.post(
-                f"{platform_server}/api/groups_to_observe_classroom/{user.platform_id}/{location_id}",
+                f"{gennis_server_url}/api/groups_to_observe_classroom/{user.platform_id}/{location_id}",
                 json=request.get_json())
             return jsonify(response.json())
         else:
             response = requests.get(
-                f"{platform_server}/api/groups_to_observe_classroom/{user.platform_id}/{location_id}")
+                f"{gennis_server_url}/api/groups_to_observe_classroom/{user.platform_id}/{location_id}")
             print(response)
         return jsonify(response.json())
 
@@ -41,12 +41,12 @@ def teacher_observe(group_id):
     if user.system_name == "gennis":
         if request.method == 'POST':
             response = requests.post(
-                f"{platform_server}/api/teacher_observe_classroom/{user.platform_id}/{group_id}",
+                f"{gennis_server_url}/api/teacher_observe_classroom/{user.platform_id}/{group_id}",
                 json=request.get_json())
             return jsonify(response.json())
         else:
             response = requests.get(
-                f"{platform_server}/api/teacher_observe_classroom/{user.platform_id}/{group_id}")
+                f"{gennis_server_url}/api/teacher_observe_classroom/{user.platform_id}/{group_id}")
         return jsonify(response.json())
 
 
@@ -59,7 +59,7 @@ def observed_group(group_id, date):
     group = Group.query.filter(Group.id == group_id).first()
     if user.system_name == "gennis":
         response = requests.get(
-            f"{platform_server}/api/observed_group_classroom/{group.platform_id}/{date}")
+            f"{gennis_server_url}/api/observed_group_classroom/{group.platform_id}/{date}")
         return jsonify(response.json())
 
 
@@ -71,6 +71,6 @@ def observed_group_info(group_id):
     group = Group.query.filter(Group.id == group_id).first()
     if user.system_name == "gennis":
         response = requests.post(
-            f"{platform_server}/api/observed_group_info_classroom/{group.platform_id}",
+            f"{gennis_server_url}/api/observed_group_info_classroom/{group.platform_id}",
             json=request.get_json())
         return jsonify(response.json())

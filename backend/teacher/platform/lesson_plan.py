@@ -1,4 +1,4 @@
-from app import api, app, request, jsonify, db, jwt_required, get_jwt_identity, platform_server
+from app import api, app, request, jsonify, db, jwt_required, get_jwt_identity, gennis_server_url
 from backend.models.basic_model import Teacher, User, Group
 from backend.models.settings import iterate_models
 import requests
@@ -13,7 +13,7 @@ def lesson_plan_list(group_id, date):
     group = Group.query.filter(Group.id == group_id).first()
     if user.system_name == "gennis":
         response = requests.get(
-            f"{platform_server}/api/lesson_plan_list_classroom/{group.platform_id}/{date}")
+            f"{gennis_server_url}/api/lesson_plan_list_classroom/{group.platform_id}/{date}")
         return jsonify(response.json())
 
 
@@ -25,9 +25,8 @@ def get_lesson_plan(group_id):
     group = Group.query.filter(Group.id == group_id).first()
     if user.system_name == "gennis":
         response = requests.post(
-            f"{platform_server}/api/get_lesson_plan_classroom/{group.platform_id}", json=request.get_json())
+            f"{gennis_server_url}/api/get_lesson_plan_classroom/{group.platform_id}", json=request.get_json())
         return jsonify(response.json())
-    pass
 
 
 @app.route(f'{api}/change_lesson_plan/<plan_id>', methods=['POST'])
@@ -37,5 +36,5 @@ def change_lesson_plan(plan_id):
     user = User.query.filter(User.classroom_user_id == indentity).first()
     if user.system_name == "gennis":
         response = requests.post(
-            f"{platform_server}/api/change_lesson_plan_classroom/{plan_id}", json=request.get_json())
+            f"{gennis_server_url}/api/change_lesson_plan_classroom/{plan_id}", json=request.get_json())
         return jsonify(response.json())

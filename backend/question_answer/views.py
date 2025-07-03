@@ -1,4 +1,4 @@
-from app import api, app, cross_origin, db, request, jsonify, platform_server, or_, contains_eager
+from app import api, app, cross_origin, db, request, jsonify, gennis_server_url, or_, contains_eager
 
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from backend.models.basic_model import Teacher, File, Group, StudentSubject

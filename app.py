@@ -11,26 +11,45 @@ import json
 from flask_jwt_extended import JWTManager, create_refresh_token, get_jwt_identity, create_access_token, \
     unset_jwt_cookies, jwt_required
 from flask_admin import Admin
+from backend.extentions import celery_init_app
+from dotenv import load_dotenv
+from backend.extentions import db, migrate, jwt, api, cors, admin
+from backend.pisa.api.views import register_pisa_views
+load_dotenv()
 
-app = Flask(__name__, static_folder="frontend/build", static_url_path="/")
-cors = CORS(app, resources={r"/api/*": {"origins": "*"}})
 
-app.config.from_object('backend.models.config')
-db = db_setup(app)
-migrate = Migrate(app, db)
-jwt = JWTManager(app)
+def create_app():
+    app = Flask(
+        __name__,
+        static_folder="frontend/build",  # React build
+        static_url_path="/"  # Serve React from root
+    )
+    app.config.from_object('backend.models.config')
+    db.init_app(app)
+    migrate.init_app(app, db)
+    jwt.init_app(app)
+    # api.init_app(app)
+    cors.init_app(app, resources={r"/api/*": {"origins": "*"}})
+    admin.init_app(app)
+    app.config.from_mapping(
+        CELERY=dict(
+            broker_url=os.getenv('CELERY_BROKER_URL', 'redis://localhost:6379/2'),
+            result_backend=os.getenv('CELERY_RESULT_BACKEND', 'redis://localhost:6379/2'),
+            task_ignore_result=True,
+        ),
+    )
+    api = '/api'
+    register_pisa_views(api, app)
+    # register_commands(app)
+    # register_teacher_views(app)
+    return app
+
+
+app = create_app()
+
 api = '/api'
-platform_server = 'https://admin.gennis.uz'
-# platform_server = "http://192.168.1.15:5002"
-django_server = "https://school.gennis.uz"
-# django_server = "http://192.168.1.14:7622"
-
-admin = Admin(
-    app,
-    name='Gennis',
-    template_mode='bootstrap3',
-    static_url_path='/flask_static'
-)
+gennis_server_url = os.getenv('GENNIS_SERVER_URL')
+turon_server_url = os.getenv('TURON_SERVER_URL')
 
 # basics
 from backend.basics.views import *
@@ -56,7 +75,7 @@ from backend.class_test.views import *
 from backend.mobile.views import *
 
 # pisa
-from backend.pisa.api.views import *
+# from backend.pisa.api.views import *
 
 from backend.models.views import *
 

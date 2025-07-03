@@ -1,43 +1,48 @@
 from app import app, jsonify, api, request, or_
 from backend.models.basic_model import db, Pisa, PisaBlockText, PisaBlockTextAnswer, PisaBlockQuestionOptions, PisaTest, \
     PisaStudent, PisaFileType, PisaBlockOptionsStudent, PisaBlockTextAnswerStudent, School, create_school, User, \
-    PisaStudent, Role
+    PisaStudent, Role, Location
 import pprint
 from backend.basics.settings import check_exist_classroom_id
 from werkzeug.security import generate_password_hash
 from flask_jwt_extended import jwt_required, get_jwt_identity
+from flask import Blueprint
+
+pisa_student_bp = Blueprint("student", __name__)
 
 
-@app.route(f'{api}/register_pisa', methods=['GET', 'POST'])
+# @app.route(f'{api}/register_pisa', methods=['GET', 'POST'])
+@pisa_student_bp.route(f'/register', methods=['GET', 'POST'])
 def register_pisa():
     create_school()
     if request.method == "POST":
-        pprint.pprint(request.get_json())
         classroom_id = check_exist_classroom_id()
         username = request.get_json()['username']
         name = request.get_json()['name']
         surname = request.get_json()['surname']
         language = request.get_json()['language']
-        school = request.get_json()['school']
+        location = request.get_json()['location']
         parentPhone = request.get_json()['parentPhone']
-        get_school = School.query.filter(School.id == school).first()
+
         role = Role.query.filter(Role.type == "student_test", Role.role == "a52v23q13").first()
         if not role:
             role = Role(type="student_test", role="a52v23q13")
             role.add_commit()
         add_user = User(username=username, name=name, surname=surname, balance=0, system_name="pisa",
                         parent_phone=parentPhone, password=generate_password_hash("12345678"),
-                        role_id=role.id,
+                        role_id=role.id, location_id=location,
                         classroom_user_id=classroom_id, education_language=language)
         add_user.add_commit()
-        add_student = PisaStudent(user_id=add_user.id, school_id=get_school.id)
+        add_student = PisaStudent(user_id=add_user.id)
         add_student.add()
         return jsonify({"success": True, "msg": "Muvaffaqiyatli ro'yxatdan o'tdingiz"}), 200
-    schools = School.query.order_by(School.number).all()
-    return jsonify([school.convert_json() for school in schools])
+
+    locations = Location.query.order_by(Location.platform_id).all()
+    return jsonify([location.convert_json() for location in locations])
 
 
-@app.route(f'{api}/check_username_pisa', methods=['POST'])
+# @app.route(f'{api}/check_username_pisa', methods=['POST'])
+@pisa_student_bp.route(f'/check/username', methods=['POST'])
 def check_username_pisa():
     username = request.get_json()['username']
     user = User.query.filter(User.username == username, User.system_name == "pisa").first()
@@ -46,7 +51,8 @@ def check_username_pisa():
     return jsonify({"success": True, "msg": "Bunday foydalanuvchi mavjud emas"}), 200
 
 
-@app.route(f'{api}/get_pisa_list')
+# @app.route(f'{api}/get_pisa_list')
+@pisa_student_bp.route(f'/get/list')
 @jwt_required()
 def get_pisa_list():
     user = User.query.filter(User.classroom_user_id == get_jwt_identity()).first()
@@ -68,7 +74,8 @@ def get_pisa_list():
     return jsonify(pisa_list)
 
 
-@app.route(f'{api}/get_pisa_test/<pk>')
+# @app.route(f'{api}/get_pisa_test/<pk>')
+@pisa_student_bp.route(f'/get/test/<pk>')
 @jwt_required()
 def get_pisa_test(pk):
     pisa_test = Pisa.query.filter(Pisa.id == pk).first()
@@ -207,7 +214,7 @@ def get_pisa_test(pk):
                 student_option = PisaBlockOptionsStudent.query.filter(
                     PisaBlockOptionsStudent.pisa_test_id == pisa_test_student.id,
                     PisaBlockOptionsStudent.student_id == pisa_student.id,
-                    PisaBlockOptionsStudent.question_options_id == option.id,
+                    PisaBlockOptionsStudent.pisa_block_question_options_id == option.id,
                     PisaBlockOptionsStudent.pisa_block_text_id == pisa_block.id).first()
                 student_block = student_option.convert_json() if student_option else None
             info_test = {
@@ -228,10 +235,10 @@ def get_pisa_test(pk):
     return jsonify(info)
 
 
-@app.route(f'{api}/complete_pisa_test/<pk>', methods=['POST'])
+# @app.route(f'{api}/complete_pisa_test/<pk>', methods=['POST'])
+@pisa_student_bp.route(f'/complete/pisa/test/<pk>', methods=['POST'])
 @jwt_required()
 def complete_pisa_test(pk):
-    pprint.pprint(request.get_json())
     user = User.query.filter(User.classroom_user_id == get_jwt_identity()).first()
     pisa_student = PisaStudent.query.filter(PisaStudent.user_id == user.id).first()
     get_pisa = Pisa.query.filter(Pisa.id == pk).first()
@@ -250,12 +257,14 @@ def complete_pisa_test(pk):
     type_question = request.get_json()['type'] if 'type' in request.get_json() else None
     get_block = PisaBlockText.query.filter(PisaBlockText.pisa_id == get_pisa.id,
                                            PisaBlockText.id == request.get_json()['block_id']).first()
+    print(type_question)
+    pprint.pprint(request.get_json())
     if type_question:
         if type_question == 'select' or type_question == 'input':
 
             get_pisa_options = PisaBlockQuestionOptions.query.filter(
                 PisaBlockQuestionOptions.pisa_block_id == get_block.id,
-                PisaBlockQuestionOptions.answer == '',
+                PisaBlockQuestionOptions.answer == None,
                 PisaBlockQuestionOptions.id ==
                 request.get_json()['answer']['id']).first() if 'id' in \
                                                                request.get_json()[
@@ -283,7 +292,6 @@ def complete_pisa_test(pk):
                     student_options_exists.isTrue = get_pisa_options.isTrue
                     student_options_exists.pisa_block_question_options_id = get_pisa_options.id
                     db.session.commit()
-
             if get_pisa_input:
                 student_input_exists = PisaBlockOptionsStudent.query.filter(
                     PisaBlockOptionsStudent.pisa_block_text_id == get_block.id,
@@ -353,7 +361,7 @@ def complete_pisa_test(pk):
         PisaBlockTextAnswerStudent.student_id == pisa_student.id,
         PisaBlockTextAnswerStudent.status == False).count()
 
-    result = round((all_true_options + all_true_inputs / get_pisa.total_questions) * 100)
+    result = round(((all_true_options + all_true_inputs) / get_pisa.total_questions) * 100)
 
     pisa_test_exist.true_answers = all_true_options + all_true_inputs
     pisa_test_exist.false_answers = all_false_options + all_false_inputs
@@ -361,11 +369,11 @@ def complete_pisa_test(pk):
     pisa_test_exist.total_questions = get_pisa.total_questions
     db.session.commit()
 
-    pprint.pprint(request.get_json())
     return jsonify({"success": True, "msg": "Muvaffaqiyatli yakunlandi", "student_pisa_id": pisa_test_exist.id}), 200
 
 
-@app.route(f'{api}/show_results/<pisa_test_id>', methods=['GET'])
+# @app.route(f'{api}/show_results/<pisa_test_id>', methods=['GET'])
+@pisa_student_bp.route(f'/show/result/<pisa_test_id>', methods=['GET'])
 @jwt_required()
 def show_results(pisa_test_id):
     user = User.query.filter(User.classroom_user_id == get_jwt_identity()).first()
@@ -377,9 +385,73 @@ def show_results(pisa_test_id):
     return jsonify({"success": True, "msg": "Muvaffaqiyatli yakunlandi", "test": pisa_test.convert_json()}), 200
 
 
-@app.route(f'{api}/check_pisa_test/<pk>', methods=['GET'])
+# @app.route(f'{api}/check_pisa_test/<pk>', methods=['GET'])
+@pisa_student_bp.route(f'/check/pisa/test/<pk>', methods=['GET'])
 @jwt_required()
 def check_pisa_test(pk):
     user = User.query.filter(User.classroom_user_id == get_jwt_identity()).first()
     pisa_student = PisaStudent.query.filter(PisaStudent.user_id == user.id).first()
     pass
+
+
+# @app.route(f'{api}/pisa_student_list', methods=['GET'])
+@pisa_student_bp.route('/list', methods=['GET', 'POST'])
+def pisa_student_list():
+    from sqlalchemy import or_
+
+    if request.method == "POST":
+        data = request.json or {}
+        page = int(data.get('currentPage', 1))
+        per_page = int(data.get('page_size', 50))
+
+        pprint.pprint(data)
+
+        query = PisaTest.query.join(PisaTest.student_pisa).join(PisaStudent.user).order_by(PisaTest.id.desc())
+
+        pisa_test_id = data.get('test')
+        location_id = data.get('branch')
+        search = data.get('search')
+
+        if pisa_test_id:
+            query = query.filter(PisaTest.pisa_id == pisa_test_id)
+
+        if location_id:
+            query = query.filter(User.location_id == location_id)
+
+        if search:
+            query = query.filter(
+                or_(
+                    User.username.like(f"%{search}%"),
+                    User.name.like(f"%{search}%"),
+                    User.surname.like(f"%{search}%")
+                )
+            )
+        total_students = query.count()
+        paginated = query.paginate(page=page, per_page=per_page, error_out=False)
+        items = [item.convert_json() for item in paginated.items]
+
+        return jsonify({
+            'pisa_students': items,
+            "total_students": total_students,
+            'total': paginated.total,
+            'pages': paginated.pages,
+            'current_page': paginated.page
+        }), 200
+
+    else:
+        # GET fallback (if you want to support it)
+        page = int(request.args.get('page', 1))
+        per_page = int(request.args.get('per_page', 50))
+
+        query = PisaTest.query.order_by(PisaTest.id.desc())
+        total_students = query.count()
+        paginated = query.paginate(page=page, per_page=per_page, error_out=False)
+        items = [item.convert_json() for item in paginated.items]
+
+        return jsonify({
+            'pisa_students': items,
+            "total_students": total_students,
+            'total': paginated.total,
+            'pages': paginated.pages,
+            'current_page': paginated.page
+        }), 200

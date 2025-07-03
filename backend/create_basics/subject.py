@@ -1,4 +1,4 @@
-from app import api, app, cross_origin, db, request, jsonify, platform_server, or_, contains_eager, django_server
+from app import api, app, cross_origin, db, request, jsonify, gennis_server_url, or_, contains_eager, turon_server_url
 
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from backend.models.basic_model import Teacher, File, Group, StudentSubject, Chapter, SubjectLevel, StudentChapter
@@ -161,7 +161,7 @@ def edit_subject(subject_id):
             })
         db.session.commit()
         subjects_server = Subject.query.order_by(Subject.id).all()
-        send_subject_server("subject", platform_server, subjects_server)
+        send_subject_server("subject", gennis_server_url, subjects_server)
         return edit_msg(f"{name}", status=True, data=subject_get.convert_json())
         # except:
         #     return edit_msg(f"{name}", status=False, data=subject_get.convert_json())
@@ -179,7 +179,7 @@ def del_subject(subject_id):
     if sub_name.file_id:
         check_img_remove(sub_name.file_id, File)
     subjects_server = Subject.query.order_by(Subject.id).all()
-    send_subject_server("subject", platform_server, subjects_server)
+    send_subject_server("subject", gennis_server_url, subjects_server)
     return del_msg(item=name, status=True)
 
 

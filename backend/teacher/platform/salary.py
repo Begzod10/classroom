@@ -1,4 +1,4 @@
-from app import api, app, request, jsonify, db, jwt_required, get_jwt_identity, platform_server, django_server
+from app import api, app, request, jsonify, db, jwt_required, get_jwt_identity, gennis_server_url, turon_server_url
 from backend.models.basic_model import User, Student, Role, Subject, Teacher, StudentSubject, Group
 import requests
 from backend.basics.platform.utils import check_group_info, check_user_gennis, check_user_turon
@@ -12,7 +12,7 @@ def teacher_salary_info():
     user = User.query.filter(User.classroom_user_id == identity).first()
 
     if user.system_name == "gennis":
-        response = requests.get(f"{platform_server}/api/salary_info_classroom/{user.platform_id}")
+        response = requests.get(f"{gennis_server_url}/api/salary_info_classroom/{user.platform_id}")
         return jsonify(
             response.json()
         )
@@ -26,13 +26,13 @@ def block_salary(location_id, year_id):
     user = User.query.filter(User.classroom_user_id == identity).first()
     if user.system_name == "gennis":
         response = requests.get(
-            f"{platform_server}/api/block_salary_classroom/{user.platform_id}/{location_id}/{year_id}")
+            f"{gennis_server_url}/api/block_salary_classroom/{user.platform_id}/{location_id}/{year_id}")
         return jsonify(
             response.json()
         )
     else:
         response = requests.get(
-            f"{django_server}/api/Teacher/teacher-salary-list2/{user.turon_id}/")
+            f"{turon_server_url}/api/Teacher/teacher-salary-list2/{user.turon_id}/")
         return jsonify(
             response.json()
         )
@@ -46,13 +46,13 @@ def teacher_salary(location_id, year_id):
     user = User.query.filter(User.classroom_user_id == identity).first()
     if user.system_name == "gennis":
         response = requests.get(
-            f"{platform_server}/api/block_salary2/{user.platform_id}/{location_id}/{year_id}")
+            f"{gennis_server_url}/api/block_salary2/{user.platform_id}/{location_id}/{year_id}")
         return jsonify(
             response.json()
         )
     else:
         response = requests.get(
-            f"{django_server}/api/Teachers/teacher-salary-list2/{user.platform_id}/")
+            f"{turon_server_url}/api/Teachers/teacher-salary-list2/{user.platform_id}/")
         return jsonify(
             response.json()
         )
@@ -65,14 +65,14 @@ def teacher_salary_inside(salary_id):
     user = User.query.filter(User.classroom_user_id == identity).first()
     if user.system_name == "gennis":
 
-        response = requests.get(f"{platform_server}/api/teacher_salary_inside_classroom/{user.platform_id}/{salary_id}")
+        response = requests.get(f"{gennis_server_url}/api/teacher_salary_inside_classroom/{user.platform_id}/{salary_id}")
 
         return jsonify(
             response.json()
         )
     else:
         response = requests.get(
-            f"{django_server}/api/Teacher/teacher-salary-list2/{salary_id}/?status={status}")
+            f"{turon_server_url}/api/Teacher/teacher-salary-list2/{salary_id}/?status={status}")
         print(response.json())
 
         return jsonify(
@@ -86,7 +86,7 @@ def teacher_black_salary():
     identity = get_jwt_identity()
     user = User.query.filter(User.classroom_user_id == identity).first()
     if user.system_name == "gennis":
-        response = requests.get(f"{platform_server}/api/black_salary_classroom/{user.platform_id}")
+        response = requests.get(f"{gennis_server_url}/api/black_salary_classroom/{user.platform_id}")
         return jsonify(
             response.json()
         )
@@ -98,7 +98,7 @@ def teacher_locations():
     indentity = get_jwt_identity()
     user = User.query.filter(User.classroom_user_id == indentity).first()
     if user.system_name == "gennis":
-        response = requests.get(f"{platform_server}/api/teacher_locations_classroom/{user.platform_id}")
+        response = requests.get(f"{gennis_server_url}/api/teacher_locations_classroom/{user.platform_id}")
         return jsonify(
             response.json()
         )
@@ -113,7 +113,7 @@ def user_time_table(location_id):
     student = Student.query.filter(Student.user_id == user.id).first()
     teacher = Teacher.query.filter(Teacher.user_id == user.id).first()
     if user.system_name == "gennis":
-        response = requests.get(f"{platform_server}/api/user_time_table_classroom/{user.platform_id}/{location_id}")
+        response = requests.get(f"{gennis_server_url}/api/user_time_table_classroom/{user.platform_id}/{location_id}")
         return jsonify(
             response.json()
         )
@@ -123,7 +123,7 @@ def user_time_table(location_id):
         else:
             group_id = teacher.groups[0].id
         group = Group.query.filter(Group.id == group_id).first()
-        response = requests.get(f"{django_server}/api/SchoolTimeTable/time_table_mobile/{group.turon_id}")
+        response = requests.get(f"{turon_server_url}/api/SchoolTimeTable/time_table_mobile/{group.turon_id}")
         return jsonify(
             response.json()
         )

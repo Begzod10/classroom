@@ -1,6 +1,6 @@
 import requests
 
-from app import api, app, cross_origin, db, request, jsonify, platform_server
+from app import api, app, cross_origin, db, request, jsonify, gennis_server_url
 from backend.models.settings import iterate_models
 from backend.models.basic_model import Role, Teacher, User, Student, Location, Subject, SubjectLevel, Group, \
     StudentSubject
@@ -12,7 +12,7 @@ from backend.lessons.models import StudentLevel
 @app.route(f'{api}/mobile/send_user/<token>')
 @cross_origin()
 def mobile_send_user(token):
-    response = requests.get(f"{platform_server}/api/get_user", headers={
+    response = requests.get(f"{gennis_server_url}/api/get_user", headers={
         "Authorization": "Bearer " + token,
         'Content-Type': 'application/json'
     })

@@ -1,4 +1,4 @@
-from app import app, api, cross_origin, db, contains_eager, request, or_, jsonify, platform_server, django_server
+from app import app, api, cross_origin, db, contains_eager, request, or_, jsonify, gennis_server_url, turon_server_url
 from backend.models.basic_model import Student, StudentLevel, Teacher, Group, SubjectLevel, User, StudentSubject, \
     Location, Role, Subject, Chapter, StudentChapter, StudentLesson
 from flask_jwt_extended import get_jwt_identity, jwt_required
@@ -70,11 +70,13 @@ def group_profile(group_id):
     user = User.query.filter(User.classroom_user_id == identity).first()
     student = Student.query.filter(Student.user_id == user.id).first()
     group = Group.query.filter(Group.id == group_id).first()
+    errors = []
     if user.system_name == "gennis":
-        response = requests.get(f"{platform_server}/api/group_profile_classroom/{group.platform_id}", headers={
+        response = requests.get(f"{gennis_server_url}/api/group_profile_classroom/{group.platform_id}", headers={
             'Content-Type': 'application/json'
         })
         user_id_list = response.json()['user_id_list']
+        errors = response.json()['errors']
         users = User.query.filter(User.platform_id.in_(user_id_list)).all()
         exist_students = Student.query.filter(Student.user_id.in_([user.id for user in users])).all()
         group_students = Student.query.join(Student.groups).filter(Group.id == group_id, Student.id.notin_(
@@ -122,7 +124,6 @@ def group_profile(group_id):
                                                            level_id=level.id, self_chapter_id=exist_chapter.id,
                                                            order=lesson.order, chapter_id=chapter.id)
                             student_lesson.add_commit()
-
     levels = SubjectLevel.query.filter(SubjectLevel.subject_id == group.subject_id).filter(
         or_(SubjectLevel.disabled == False, SubjectLevel.disabled == None)).order_by(SubjectLevel.id).all()
 
@@ -132,9 +133,7 @@ def group_profile(group_id):
             contains_eager(StudentLevel.subject_level)).filter(StudentLevel.student_id == student.id,
                                                                StudentLevel.group_id == group_id).order_by(
             SubjectLevel.id).all()
-
     else:
-
         subject_level = SubjectLevel.query.filter(SubjectLevel.subject_id == group.subject_id).order_by(
             SubjectLevel.id).all()
     user = User.query.filter_by(user_id=identity).first()
@@ -142,7 +141,8 @@ def group_profile(group_id):
     return jsonify({
         "data": group.convert_json(user=user),
         "subject_levels": iterate_models(levels),
-        "curriculum": iterate_models(subject_level)
+        "curriculum": iterate_models(subject_level),
+        "errors": errors
     })
 
 

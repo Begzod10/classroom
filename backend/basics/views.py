@@ -2,7 +2,7 @@ import datetime
 
 import requests
 
-from app import api, app, cross_origin, db, request, jsonify, platform_server, django_server
+from app import api, app, cross_origin, db, request, jsonify, gennis_server_url, turon_server_url
 from backend.models.settings import iterate_models
 from backend.models.basic_model import Role, Teacher, User, Student, Location, Subject, SubjectLevel, Group, \
     StudentSubject
@@ -36,21 +36,21 @@ def refresh():
     if user.role.type != "methodist" and user.system_name != "pisa":
         if user.system_name == "gennis":
             if user.teacher:
-                response = requests.get(f"{platform_server}/api/get_teacher_balance/{user.platform_id}", headers={
+                response = requests.get(f"{gennis_server_url}/api/get_teacher_balance/{user.platform_id}", headers={
                     'Content-Type': 'application/json'
                 })
             else:
-                response = requests.get(f"{platform_server}/api/get_student_balance/{user.platform_id}", headers={
+                response = requests.get(f"{gennis_server_url}/api/get_student_balance/{user.platform_id}", headers={
                     'Content-Type': 'application/json'
                 })
         else:
 
             if user.teacher:
-                response = requests.get(f"{django_server}/api/Teachers/get_balance/{user.turon_id}/", headers={
+                response = requests.get(f"{turon_server_url}/api/Teachers/get_balance/{user.turon_id}/", headers={
                     'Content-Type': 'application/json'
                 })
             else:
-                response = requests.get(f"{django_server}/api/Students/get_balance/{user.turon_id}/", headers={
+                response = requests.get(f"{turon_server_url}/api/Students/get_balance/{user.turon_id}/", headers={
                     'Content-Type': 'application/json'
                 })
 
@@ -73,7 +73,7 @@ def refresh():
 @app.route(f'{api}/send_user/<token>')
 @cross_origin()
 def send_user(token):
-    response = requests.get(f"{platform_server}/api/get_user", headers={
+    response = requests.get(f"{gennis_server_url}/api/get_user", headers={
         "Authorization": "Bearer " + token,
         'Content-Type': 'application/json'
     })
@@ -364,7 +364,7 @@ def turon_user(username):
                 role_instance.subjects.append(subject)
                 db.session.commit()
 
-    requests.put(f"{django_server}/api/Users/username-check/", headers={
+    requests.put(f"{turon_server_url}/api/Users/username-check/", headers={
         'Content-Type': 'application/json'
     }, json={"username": username, "user_id": user.user_id, "turon_id": user.turon_id})
     return jsonify({

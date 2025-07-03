@@ -1,4 +1,4 @@
-from app import app, api, db, request, jsonify, platform_server, django_server
+from app import app, api, db, request, jsonify, gennis_server_url, turon_server_url
 from flask_jwt_extended import get_jwt_identity, jwt_required
 from backend.models.basic_model import User, SubjectLevel, StudentLevel, Student
 from backend.basics.settings import create_msg, edit_msg, del_msg
@@ -46,7 +46,7 @@ def info_level(subject_id):
                 SubjectLevel.id).all()
             server_levels = SubjectLevel.query.order_by(
                 SubjectLevel.id).all()
-            send_subject_server("levels", platform_server, server_levels)
+            send_subject_server("levels", gennis_server_url, server_levels)
             return create_msg(f"{name}", status=True, data=iterate_models(subject_levels))
 
         except:
@@ -93,7 +93,7 @@ def edit_level(level_id):
             db.session.commit()
             server_levels = SubjectLevel.query.order_by(
                 SubjectLevel.id).all()
-            send_subject_server("levels", platform_server, server_levels)
+            send_subject_server("levels", gennis_server_url, server_levels)
             return edit_msg(f"{name}", status=True, data=level.convert_json())
         except:
             return edit_msg(f"{name}", status=False, data=level.convert_json())
@@ -105,12 +105,12 @@ def edit_level(level_id):
             db.session.commit()
             server_levels = SubjectLevel.query.order_by(
                 SubjectLevel.id).all()
-            send_subject_server("levels", platform_server, server_levels)
+            send_subject_server("levels", gennis_server_url, server_levels)
             return edit_msg(f"{name}", status=True)
         else:
             level_name.disabled = True
             db.session.commit()
             server_levels = SubjectLevel.query.order_by(
                 SubjectLevel.id).all()
-            send_subject_server("levels", platform_server, server_levels)
+            send_subject_server("levels", gennis_server_url, server_levels)
             return del_msg(item=name, status=True)

@@ -3,10 +3,15 @@ import pprint
 from app import app, db, api, request, jsonify
 from backend.models.basic_model import Pisa, PisaBlockText, PisaBlockTextAnswer, PisaBlockQuestionOptions
 from backend.models.settings import iterate_models
+from flask import Blueprint
+
+crud_test_pisa_bp = Blueprint('test_pisa', __name__)
 
 
-@app.route(f'{api}/crud_pisa_test', defaults={'pk': None}, methods=['GET', 'POST', 'PUT', 'DELETE'])
-@app.route(f'{api}/crud_pisa_test/<pk>', methods=['GET', 'POST', 'PUT', 'DELETE'])
+# @app.route(f'{api}/crud_pisa_test', defaults={'pk': None}, methods=['GET', 'POST', 'PUT', 'DELETE'])
+# @app.route(f'{api}/crud_pisa_test/<pk>', methods=['GET', 'POST', 'PUT', 'DELETE'])
+@crud_test_pisa_bp.route(f'/test/crud', defaults={'pk': None}, methods=['GET', 'POST', 'PUT', 'DELETE'])
+@crud_test_pisa_bp.route(f'/test/crud/<pk>', methods=['GET', 'POST', 'PUT', 'DELETE'])
 def crud_pisa_test(pk):
     if request.method == "POST":
         pisa_test = Pisa(name="unnamed", status=False)
@@ -63,7 +68,8 @@ def crud_pisa_test(pk):
                 'innerType': pisa_block.innerType,
                 'video_url': pisa_block.video_url,
                 'answers': [answer.convert_json() for answer in block_text_answers],
-                'options': [option.convert_json() for option in block_text_options]
+                'options': [option.convert_json() for option in block_text_options],
+                'can_delete': True if not pisa_block.answers_students and not pisa_block.options_students else False
             }
             info['pisa_blocks_left'].append(info_left)
         for pisa_block in pisa_blocks_right:
@@ -87,14 +93,16 @@ def crud_pisa_test(pk):
                 'type_question': pisa_block.type_question,
                 'video_url': pisa_block.video_url,
                 'answers': [answer.convert_json() for answer in block_text_answers],
-                'options': [option.convert_json() for option in block_text_options]
+                'options': [option.convert_json() for option in block_text_options],
+                'can_delete': True if not pisa_block.answers_students and not pisa_block.options_students else False
             }
             info['pisa_blocks_right'].append(info_right)
 
         return jsonify(info)
 
 
-@app.route(f'{api}/pisa_test_list/<deleted>')
+# @app.route(f'{api}/pisa_test_list/<deleted>')
+@crud_test_pisa_bp.route(f'/list/<deleted>')
 def pisa_test_list(deleted):
     if deleted == 'true':
         pisa_tests = Pisa.query.filter_by(deleted=True).all()

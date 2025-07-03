@@ -69,10 +69,22 @@ class PisaBlockText(db.Model):
                                     order_by="PisaBlockOptionsStudent.id")
 
     def convert_json(self, entire=False):
-        return {"id": self.id, "pisa_id": self.pisa_id, "file_id": self.file_id, "position": self.position,
-                "index": self.index, "text": self.text, "type_block": self.type_block, "completed": self.completed,
-                "words": self.words, "editorState": self.editorState, "typeVariants": self.typeVariants,
-                "type_question": self.type_question, "video_url": self.video_url}
+        return {
+            "id": self.id,
+            "pisa_id": self.pisa_id,
+            "file_id": self.file_id,
+            "position": self.position,
+            "index": self.index,
+            "text": self.text,
+            "type_block": self.type_block,
+            "completed": self.completed,
+            "words": self.words,
+            "editorState": self.editorState,
+            "typeVariants": self.typeVariants,
+            "type_question": self.type_question,
+            "video_url": self.video_url,
+            "can_delete": True if not self.answers_students and not self.options_students else False
+        }
 
     def add(self):
         db.session.add(self)
@@ -137,7 +149,7 @@ class PisaStudent(db.Model):
     user_id = Column(Integer, ForeignKey('user.id'))
     grade = Column(String)
     address = Column(String)
-    school_id = Column(Integer, ForeignKey('school.id'))
+    # school_id = Column(Integer, ForeignKey('school.id'))
     tests = relationship('PisaTest', backref='student_pisa', order_by="PisaTest.id")
 
     def add(self):
@@ -162,10 +174,14 @@ class PisaTest(db.Model):
     finished = Column(Boolean, default=False)
 
     def convert_json(self, entire=False):
+        pisa_student = PisaStudent.query.filter(PisaStudent.id == self.student_id).first()
+
         return {"id": self.id, "student_id": self.student_id, "pisa_id": self.pisa_id,
                 "true_answers": self.true_answers,
-                "school_id": self.student_pisa.school_id,
-                "school_name": self.student_pisa.school.name,
+                "location": {
+                    "id": pisa_student.user.location_id if pisa_student.user.location_id else None,
+                    "name": pisa_student.user.location.name if pisa_student.user.location_id else None
+                },
                 "false_answers": self.false_answers, "result": self.result, "test_date": self.test_date,
                 "total_questions": self.total_questions, "name": self.student_pisa.user.name,
                 "finished": self.finished,
@@ -236,7 +252,6 @@ class School(db.Model):
     id = Column(Integer, primary_key=True)
     number = Column(Integer)
     name = Column(String)
-    pisa_students = relationship('PisaStudent', backref='school', order_by="PisaStudent.id")
 
     def add(self):
         db.session.add(self)
