@@ -110,7 +110,7 @@ class User(db.Model):
             "platform_location": self.location.platform_id if self.location else None,
             "observer": self.observer,
             "img_url": img,
-            "system_name": self.system_name
+            "system_name": self.system_name,
         }
 
     def add_commit(self):

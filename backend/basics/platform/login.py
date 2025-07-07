@@ -42,12 +42,12 @@ def login():
             if not user:
                 user = check_user_turon(user_get)
         if user:
-            if user.role.type == "parent":
-                response = requests.get(f"{gennis_server_url}/api/send_parent_data/{user.platform_id}", headers={
-                    'Content-Type': 'application/json'
-                })
-                user_get = response.json()['user']
-                add_parent_gennis(user_get, user)
+            # if user.role.type == "parent":
+            #     response = requests.get(f"{gennis_server_url}/api/send_parent_data/{user.platform_id}", headers={
+            #         'Content-Type': 'application/json'
+            #     })
+            #     user_get = response.json()['user']
+            #     add_parent_gennis(user_get, user)
             if user.role.type != "methodist" and user.role.type != "parent":
                 if system_name == "gennis":
                     response = requests.get(f"{gennis_server_url}/api/send_user_data/{user.platform_id}", headers={

@@ -54,11 +54,13 @@ def check_user_gennis(user_get):
     pprint(user_get)
     if user_get['student']:
         role = Role.query.filter(Role.type == "student", Role.role == "a43c33b82").first()
-    else:
+    elif user_get['teacher']:
         role = Role.query.filter(Role.type == "teacher", Role.role == "b00c11a31").first()
-    if user_get['parent']:
+    elif user_get['parent']:
         role = Role.query.filter(Role.type == "parent", Role.role == "pa21s122s").first()
-
+        if not role:
+            role = Role(type="parent", role="pa21s122s")
+            role.add_commit()
     user = User.query.filter(User.username == user_get['username'], User.system_name == "gennis").first()
     classroom_user_id = check_exist_classroom_id()
     if not user:
@@ -117,7 +119,7 @@ def check_user_gennis(user_get):
             if not student_subject:
                 student_subject = StudentSubject(subject_id=subject.id, student_id=student.id)
                 student_subject.add_commit()
-    if user_get['teacher']:
+    elif user_get['teacher']:
         teacher = Teacher.query.filter(Teacher.user_id == user.id).first()
         if not teacher:
             teacher = Teacher(user_id=user.id)
@@ -139,17 +141,31 @@ def check_user_gennis(user_get):
             if gr.platform_id not in group_list:
                 teacher.groups.remove(gr)
                 db.session.commit()
-
+    elif user_get['parent']:
+        parent = Parent.query.filter(Parent.user_id == user.id).first()
+        if not parent:
+            parent = Parent(user_id=user.id)
+            parent.add_commit()
+        for child in user_get['parent']['children']:
+            user = User.query.filter(User.platform_id == child['user_id']).first()
+            if user:
+                student = Student.query.filter(Student.user_id == user.id).first()
+            else:
+                user_get = child['user']
+                user = check_user_gennis(user_get)
+                student = Student.query.filter(Student.user_id == user.id).first()
+            if student:
+                if student not in parent.student_get:
+                    parent.student_get.append(student)
+                    db.session.commit()
     return user
 
 
 def check_user_turon(info):
     if info['role'] == "teacher":
         role = Role.query.filter(Role.type == "teacher", Role.role == "b00c11a31").first()
-
     else:
         role = Role.query.filter(Role.type == "student", Role.role == "a43c33b82").first()
-
     classroom_user_id = check_exist_classroom_id()
     user = User.query.filter(User.username == info['username'], User.system_name == "school").first()
     username = info['username']
