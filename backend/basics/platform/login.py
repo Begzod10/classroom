@@ -42,12 +42,6 @@ def login():
             if not user:
                 user = check_user_turon(user_get)
         if user:
-            # if user.role.type == "parent":
-            #     response = requests.get(f"{gennis_server_url}/api/send_parent_data/{user.platform_id}", headers={
-            #         'Content-Type': 'application/json'
-            #     })
-            #     user_get = response.json()['user']
-            #     add_parent_gennis(user_get, user)
             if user.role.type != "methodist" and user.role.type != "parent":
                 if system_name == "gennis":
                     response = requests.get(f"{gennis_server_url}/api/send_user_data/{user.platform_id}", headers={
@@ -63,8 +57,6 @@ def login():
         user.system_name = system_name
         db.session.commit()
     else:
-        # user.classroom_user_id = "746fd4f7d00311efa46700155d96426c"
-        # db.session.commit()
         if user and check_password_hash(user.password, password):
             return jsonify({
                 "data": {
