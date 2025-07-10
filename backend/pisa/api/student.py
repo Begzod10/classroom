@@ -240,7 +240,12 @@ def get_pisa_test(pk):
 @jwt_required()
 def complete_pisa_test(pk):
     user = User.query.filter(User.classroom_user_id == get_jwt_identity()).first()
-    pisa_student = PisaStudent.query.filter(PisaStudent.user_id == user.id).first()
+    pisa_student = PisaStudent.query.filter_by(user_id=user.id).first()
+
+    if not pisa_student:
+        pisa_student = PisaStudent(user_id=user.id)
+        db.session.add(pisa_student)
+        db.session.commit()
     get_pisa = Pisa.query.filter(Pisa.id == pk).first()
     get_blocks = PisaBlockText.query.filter(PisaBlockText.pisa_id == get_pisa.id).filter(
         or_(PisaBlockText.answers != None, PisaBlockText.options != None)).count()
@@ -383,6 +388,45 @@ def show_results(pisa_test_id):
     pisa_test.finished = True
     db.session.commit()
     return jsonify({"success": True, "msg": "Muvaffaqiyatli yakunlandi", "test": pisa_test.convert_json()}), 200
+
+
+@pisa_student_bp.route('/show/results', methods=['GET'])
+@jwt_required()
+def show_all_results():
+    location_id = request.args.get("location_id")
+    test_id = request.args.get("pisa_test_id")
+
+    users_query = User.query.join(Role).filter(Role.type == "student")
+
+    if location_id:
+        users_query = users_query.filter(User.location_id == location_id)
+
+    users = users_query.all()
+
+    if not users:
+        return jsonify({"success": False, "msg": "Foydalanuvchilar topilmadi"}), 404
+
+    all_results = []
+
+    for user in users:
+        pisa_student = PisaStudent.query.filter(PisaStudent.user_id == user.id).first()
+        if not pisa_student:
+            continue
+
+        pisa_tests_query = PisaTest.query.filter(PisaTest.student_id == pisa_student.id)
+        if test_id:
+            pisa_tests_query = pisa_tests_query.filter(PisaTest.pisa_id == test_id)
+
+        pisa_tests = pisa_tests_query.all()
+
+        for test in pisa_tests:
+            result = test.convert_json()
+            result["user_id"] = user.id
+            all_results.append(result)
+    locations = Location.query.order_by(Location.platform_id).all()
+
+
+    return jsonify({"success": True, "results": all_results,"locations":[location.convert_json() for location in locations]}), 200
 
 
 # @app.route(f'{api}/check_pisa_test/<pk>', methods=['GET'])
