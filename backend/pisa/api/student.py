@@ -262,8 +262,7 @@ def complete_pisa_test(pk):
     type_question = request.get_json()['type'] if 'type' in request.get_json() else None
     get_block = PisaBlockText.query.filter(PisaBlockText.pisa_id == get_pisa.id,
                                            PisaBlockText.id == request.get_json()['block_id']).first()
-    print(type_question)
-    pprint.pprint(request.get_json())
+
     if type_question:
         if type_question == 'select' or type_question == 'input':
 
@@ -425,11 +424,10 @@ def show_all_results():
             all_results.append(result)
     locations = Location.query.order_by(Location.platform_id).all()
 
+    return jsonify({"success": True, "results": all_results,
+                    "locations": [location.convert_json() for location in locations]}), 200
 
-    return jsonify({"success": True, "results": all_results,"locations":[location.convert_json() for location in locations]}), 200
 
-
-# @app.route(f'{api}/check_pisa_test/<pk>', methods=['GET'])
 @pisa_student_bp.route(f'/check/pisa/test/<pk>', methods=['GET'])
 @jwt_required()
 def check_pisa_test(pk):
@@ -438,7 +436,6 @@ def check_pisa_test(pk):
     pass
 
 
-# @app.route(f'{api}/pisa_student_list', methods=['GET'])
 @pisa_student_bp.route('/list', methods=['GET', 'POST'])
 def pisa_student_list():
     from sqlalchemy import or_
@@ -447,8 +444,6 @@ def pisa_student_list():
         data = request.json or {}
         page = int(data.get('currentPage', 1))
         per_page = int(data.get('page_size', 50))
-
-        pprint.pprint(data)
 
         query = PisaTest.query.join(PisaTest.student_pisa).join(PisaStudent.user).order_by(PisaTest.id.desc())
 
