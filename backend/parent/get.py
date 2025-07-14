@@ -93,7 +93,7 @@ def student_tests_data(group_id):
 @get_parent_bp.route('/student_tests/<group_id>/<month>/<year>', methods=['GET'])
 def student_tests(group_id, month, year):
     group_id = int(group_id)
-    month = int(month.lstrip("0"))  # '07' -> 7
+    month = int(month.lstrip("0"))
     year = int(year)
 
     response = requests.get(
