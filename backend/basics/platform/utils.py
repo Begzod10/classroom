@@ -1,6 +1,6 @@
 # import pprint
 from app import api, app, request, jsonify, db, jwt_required, get_jwt_identity, gennis_server_url, turon_server_url
-from backend.models.basic_model import Group, Subject, db, Role, User, StudentSubject, Student, Teacher
+from backend.models.basic_model import Group, Subject, db, Role, User, StudentSubject, Student, Teacher, Location
 from backend.models.settings import check_exist_classroom_id
 from datetime import datetime
 from pprint import pprint
@@ -51,7 +51,6 @@ def check_group_info(gr, type="gennis"):
 
 
 def check_user_gennis(user_get):
-    pprint(user_get)
     if user_get['student']:
         role = Role.query.filter(Role.type == "student", Role.role == "a43c33b82").first()
     elif user_get['teacher']:
@@ -63,6 +62,9 @@ def check_user_gennis(user_get):
             role.add_commit()
     user = User.query.filter(User.username == user_get['username'], User.system_name == "gennis").first()
     classroom_user_id = check_exist_classroom_id()
+    location = Location.query.filter(Location.name == user_get['location']['name']).first()
+    if not location:
+        location = Location(name=user_get['location']['name'], platform_id=user_get['location']['id'])
     if not user:
         user = User(username=user_get['username'], name=user_get['name'], surname=user_get['surname'],
                     balance=user_get['balance'],
@@ -71,7 +73,7 @@ def check_user_gennis(user_get):
                     system_name="gennis",
                     classroom_user_id=classroom_user_id,
                     age=user_get['age'], father_name=user_get['father_name'], born_day=user_get['born_day'],
-                    born_month=user_get['born_month'], born_year=user_get['born_year'],
+                    born_month=user_get['born_month'], born_year=user_get['born_year'], location_id=location.id
                     )
         user.add_commit()
         if role.type == "parent":
@@ -142,16 +144,18 @@ def check_user_gennis(user_get):
                 teacher.groups.remove(gr)
                 db.session.commit()
     elif user_get['parent']:
+        pprint(user_get['parent']['children'])
         parent = Parent.query.filter(Parent.user_id == user.id).first()
         if not parent:
             parent = Parent(user_id=user.id)
             parent.add_commit()
         for child in user_get['parent']['children']:
-            user = User.query.filter(User.platform_id == child['user_id']).first()
+            user = User.query.filter(User.platform_id == child['user']['id']).first()
             if user:
                 student = Student.query.filter(Student.user_id == user.id).first()
             else:
                 user_get = child['user']
+
                 user = check_user_gennis(user_get)
                 student = Student.query.filter(Student.user_id == user.id).first()
             if student:

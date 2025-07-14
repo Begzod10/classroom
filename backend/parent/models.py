@@ -20,16 +20,15 @@ class Parent(db.Model):
                 "name": self.user.location.name
             },
             'date': str(self.user.born_day) + '.' + str(self.user.born_month) + '.' + str(self.user.born_year),
-            'address': self.user.address,
             "children": [
                 {
                     "id": st.id,
                     "user_id": st.user_id,
                     "name": st.user.name,
+                    "username": st.user.username,
                     "surname": st.user.surname,
                     "balance": st.user.balance,
-                    # "lesson_times": [{"time": ls.start_time.strftime("%H:%M")} for ls in st.time_table],
-                    "subjects": [subject.name for subject in st.subject]
+                    "subjects": [subject.subject.name for subject in st.studentsubject]
                 } for st in self.student
             ]
         }

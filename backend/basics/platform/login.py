@@ -25,10 +25,13 @@ def login():
                 "password": password,
             })
             user_get = response.json()['user'] if 'user' in response.json() else {}
+            print('sdvsd')
             if not user_get:
                 return {"msg": "Username yoki parol noto'g'ri", "success": False}, 200
             if not user:
                 user = check_user_gennis(user_get)
+            if user_get['parent']:
+                check_user_gennis(user_get)
         else:
             response = requests.post(f"{turon_server_url}/api/token/", headers={
                 'Content-Type': 'application/json'
@@ -63,6 +66,7 @@ def login():
         user.system_name = system_name
         db.session.commit()
     else:
+        print('aafa')
         # user.classroom_user_id = "746fd4f7d00311efa46700155d96426c"
         # db.session.commit()
         if user and check_password_hash(user.password, password):

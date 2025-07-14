@@ -12,7 +12,7 @@ crud_parent_bp = Blueprint('parent_crud', __name__)
 @crud_parent_bp.route('/crud/', methods=['POST'])
 @crud_parent_bp.route('/crud/<int:id>', methods=['GET', 'POST', 'PUT', 'DELETE'])
 def parent_detail(id=None):
-    role = Role.query.filter(Role.type_role == 'parent').first()
+    role = Role.query.filter(Role.type == 'parent').first()
     if not role:
         role = Role(role='pa21s122s', type_role='parent')
         role.add()
