@@ -1,11 +1,15 @@
 from backend.models.basic_model import Lesson, StudentChapter, Chapter, StudentLesson, User, Student
-from app import api, app, request, db, jsonify, desc
+from app import request, db, jsonify, desc
 from pprint import pprint
 from backend.models.settings import iterate_models
 from flask_jwt_extended import jwt_required, get_jwt_identity
 
+from flask import Blueprint
 
-@app.route(f'{api}/chapters_info/<level_id>', methods=['POST', "GET"])
+chapter_bp = Blueprint('chapter_folder', __name__)
+
+
+@chapter_bp.route(f'/info/<level_id>', methods=['POST', "GET"])
 @jwt_required()
 def chapters_info(level_id):
     identity = get_jwt_identity()
@@ -26,10 +30,8 @@ def chapters_info(level_id):
             "status": True
         })
     else:
-        # student chapter table yasash kere
         chapters = Chapter.query.filter(Chapter.level_id == level_id).order_by(
             Chapter.order).all()
-
         if user.student:
             chapters = Chapter.query.filter(Chapter.level_id == level_id, Chapter.status == True).order_by(
                 Chapter.order).all()
@@ -45,7 +47,6 @@ def chapters_info(level_id):
                 else:
                     exist_chapter.order = chapter.order
                     db.session.commit()
-                print(exist_chapter)
                 for lesson in chapter.lesson:
                     if not lesson.disabled:
                         student_lesson = StudentLesson.query.filter(StudentLesson.lesson_id == lesson.id,
@@ -64,15 +65,12 @@ def chapters_info(level_id):
                 StudentChapter.student_id == student.id,
                 StudentChapter.level_id == level_id).order_by(
                 StudentChapter.order).all()
-            # chapters = db.session.query(StudentChapter).join(StudentChapter.chapter).filter(
-            #     Chapter.status == True, StudentChapter.student_id == student.id,
-            #     StudentChapter.level_id == level_id).all()
         return jsonify({
             "chapters": iterate_models(chapters, entire=True)
         })
 
 
-@app.route(f'{api}/chapters/<level_id>')
+@chapter_bp.route(f'/chapters/<level_id>')
 def chapters_only(level_id):
     chapters = Chapter.query.filter(Chapter.level_id == level_id).order_by(Chapter.order).all()
     return jsonify({
@@ -80,8 +78,8 @@ def chapters_only(level_id):
     })
 
 
-@app.route(f'{api}/crud_chapter/<chapter_id>', methods=['POST', 'DELETE'])
-def crud_chapter(chapter_id):
+@chapter_bp.route(f'/crud/<chapter_id>', methods=['POST', 'DELETE'])
+def crud(chapter_id):
     chapter = Chapter.query.filter(Chapter.id == chapter_id).first()
     chapter_name = chapter.name
     if request.method == "POST":
@@ -112,21 +110,12 @@ def crud_chapter(chapter_id):
             })
 
 
-@app.route(f'{api}/change_index', methods=['POST'])
-def change_lesson():
+@chapter_bp.route(f'/change/order', methods=['POST'])
+def change_order():
     type_info = request.get_json()['type']
     chapter = request.get_json()['container']
     index = request.get_json()['newIndex']
     old_index = request.get_json()['oldIndex']
-    # new_chapters_lessons = Lesson.query.filter(Lesson.chapter_id == chapter,
-    #                                            Lesson.disabled == False).order_by(
-    #     Lesson.order).all()
-    # counter = 0
-    # for lesson in new_chapters_lessons:
-    #
-    #     lesson.order = counter
-    #     counter += 1
-    #     db.session.commit()
     if type_info == "lesson":
         lesson = request.get_json()['lesson']
         lesson = Lesson.query.filter(Lesson.id == lesson).first()

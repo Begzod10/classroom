@@ -1,12 +1,12 @@
 # import pprint
-from app import api, app, request, jsonify, db, jwt_required, get_jwt_identity, gennis_server_url, turon_server_url
+from app import  app, request, jsonify, db, jwt_required, get_jwt_identity
 from backend.models.basic_model import Group, Subject, db, Role, User, StudentSubject, Student, Teacher
 from backend.models.settings import check_exist_classroom_id
 from datetime import datetime
 from pprint import pprint
 from backend.parent.models import Parent
 import requests
-
+from backend.configs import api, gennis_server_url, turon_server_url
 
 def check_group_info(gr, type="gennis"):
     # Determine the group filter based on type

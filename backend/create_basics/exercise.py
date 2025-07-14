@@ -1,14 +1,17 @@
 from backend.models.basic_model import ExerciseTypes, SubjectLevel, Subject, Exercise, File, ExerciseAnswers, \
     StudentExercise, ExerciseBlock, ExerciseBlockImages, Component
-from app import request, app, api, db, jsonify
+from app import request, db, jsonify, current_app
 from backend.models.settings import iterate_models, delete_list_models
 from backend.basics.settings import check_img_remove, del_msg, edit_msg, create_msg, add_file
 import json
 from pprint import pprint
 from flask_jwt_extended import jwt_required
+from flask import Blueprint
+
+exercise_bp = Blueprint('exercise_folder', __name__)
 
 
-@app.route(f'{api}/info_exercise', methods=['POST', 'GET'])
+@exercise_bp.route(f'/info/', methods=['POST', 'GET'])
 @jwt_required()
 def info_exercise():
     if request.method == "POST":
@@ -46,12 +49,12 @@ def info_exercise():
                 audio_url = None
                 if type_component == "audio":
                     audio = request.files.get(f'component-{component["index"]}-audio')
-                    audio_url = add_file(audio, type_file="audio", app=app, File=File)
+                    audio_url = add_file(audio, type_file="audio", app=current_app, File=File)
 
                 word_img = request.files.get(f'component-{component["index"]}-img')
                 get_img = None
                 if word_img:
-                    get_img = add_file(word_img, type_file="img", app=app, File=File)
+                    get_img = add_file(word_img, type_file="img", app=current_app, File=File)
                 inner_type = ''
                 if 'innerType' in component:
                     inner_type = component['innerType']
@@ -86,7 +89,7 @@ def info_exercise():
                             type_img = ''
                             word_img = request.files.get(f'component-{component["index"]}-words-index-{word["id"]}')
                             if word_img:
-                                get_img = add_file(word_img, type_file="img", app=app, File=File)
+                                get_img = add_file(word_img, type_file="img", app=current_app, File=File)
                                 block_img = ExerciseBlockImages(file_id=get_img, block_id=add_exe.id, order=word['id'],
                                                                 type_image="word")
                                 block_img.add_commit()
@@ -118,7 +121,7 @@ def info_exercise():
 
                                 word_img = request.files.get(
                                     f'component-{component["index"]}-variants-index-{option["index"]}')
-                                get_img = add_file(word_img, type_file="img", app=app, File=File)
+                                get_img = add_file(word_img, type_file="img", app=current_app, File=File)
                                 type_img = 'variant_img'
 
                             answer_exercise = ExerciseAnswers(exercise_id=add_exercise.id, subject_id=get_subject.id,
@@ -142,18 +145,43 @@ def info_exercise():
             return jsonify({
                 "msg": f"Bu {name} nomdagi mashq yaratilgan"
             })
-    class_type = ExerciseTypes.query.filter(ExerciseTypes.name == "Turon").first()
-    if not class_type:
-        class_type = ExerciseTypes(name="Turon")
-        class_type.add_commit()
+    else:
+        page = int(request.args.get('page', 1))
+        per_page = int(request.args.get('per_page', 50))
+        search = request.args.get('search', '').strip()
+        subject_id = request.args.get('subject', '').strip()
+        type_id = request.args.get('type', '').strip()
+        level_id = request.args.get('level', '').strip()
 
-    exercises = Exercise.query.order_by(Exercise.id).all()
-    return jsonify({
-        "data": iterate_models(exercises, entire=True)
-    })
+        query = Exercise.query
+
+        # Apply filters dynamically
+        if search:
+            query = query.filter(Exercise.name.ilike(f"%{search}%"))
+
+        if subject_id and subject_id != "all":
+            query = query.filter(Exercise.subject_id == subject_id)
+
+        if type_id and type_id != "all":
+            query = query.filter(Exercise.type_id == type_id)
+
+        if level_id and level_id != "all":
+            query = query.filter(Exercise.level_id == level_id)
+
+        exercises = query.order_by(Exercise.id.desc()).paginate(page=page, per_page=per_page, error_out=False)
+
+        return jsonify({
+            "data": iterate_models(exercises.items, entire=True),
+            "total": exercises.total,
+            "page": exercises.page,
+            "pages": exercises.pages,
+            "per_page": exercises.per_page,
+            "has_next": exercises.has_next,
+            "has_prev": exercises.has_prev
+        })
 
 
-@app.route(f'{api}/exercise_profile/<int:exercise_id>', methods=['POST', 'GET', 'DELETE'])
+@exercise_bp.route(f'/exercise_profile/<int:exercise_id>', methods=['POST', 'GET', 'DELETE'])
 @jwt_required()
 def exercise_profile(exercise_id):
     if request.method == "GET":
@@ -220,12 +248,12 @@ def exercise_profile(exercise_id):
             if type_component == "audio":
                 audio = request.files.get(f'component-{component["index"]}-audio')
                 if audio:
-                    audio_url = add_file(audio, "audio", app, File)
+                    audio_url = add_file(audio, "audio", current_app, File)
 
             word_img = request.files.get(f'component-{component["index"]}-img')
             get_file = None
             if word_img:
-                get_file = add_file(word_img, type_file="img", app=app, File=File)
+                get_file = add_file(word_img, type_file="img", app=current_app, File=File)
 
             inner_type = ''
             clone = component
@@ -264,7 +292,7 @@ def exercise_profile(exercise_id):
                             type_img = ''
                             word_img = request.files.get(f'component-{component["index"]}-words-index-{word["id"]}')
                             if word_img:
-                                get_img = add_file(word_img, type_file="img", app=app, File=File)
+                                get_img = add_file(word_img, type_file="img", app=current_app, File=File)
                                 block_img = ExerciseBlockImages(file_id=get_img, block_id=block.id, order=word['id'],
                                                                 type_image="word")
                                 block_img.add_commit()
@@ -293,7 +321,7 @@ def exercise_profile(exercise_id):
                                 word_img = request.files.get(
                                     f'component-{component["index"]}-variants-index-{option["index"]}')
                                 if word_img:
-                                    get_file = add_file(word_img, type_file="img", app=app, File=File)
+                                    get_file = add_file(word_img, type_file="img", app=current_app, File=File)
                                 type_img = 'variant_img'
                             answer_exercise = ExerciseAnswers(exercise_id=exercise.id, subject_id=get_subject.id,
                                                               level_id=get_level.id, desc=option['text'],
@@ -352,7 +380,7 @@ def exercise_profile(exercise_id):
                                 ExerciseBlockImages.block_id == block.id).first()
                             type_img = "question_img"
                             if word_img:
-                                get_file = add_file(word_img, type_file="img", app=app, File=File)
+                                get_file = add_file(word_img, type_file="img", app=current_app, File=File)
                             else:
                                 if block_img:
                                     type_img = block_img.type_image
@@ -379,7 +407,7 @@ def exercise_profile(exercise_id):
                             word_img = request.files.get(
                                 f'component-{component["index"]}-words-index-{word["id"]}')
                             if word_img:
-                                get_img = add_file(word_img, type_file="img", app=app, File=File)
+                                get_img = add_file(word_img, type_file="img", app=current_app, File=File)
                                 block_img = ExerciseBlockImages.query.filter(
                                     ExerciseBlockImages.block_id == block.id,
                                     ExerciseBlockImages.order == word['id']).first()
@@ -408,7 +436,7 @@ def exercise_profile(exercise_id):
                                     f'component-{component["index"]}-variants-index-{option["index"]}')
 
                                 if word_img:
-                                    get_file = add_file(word_img, type_file="img", app=app, File=File)
+                                    get_file = add_file(word_img, type_file="img", app=current_app, File=File)
                                 else:
                                     get_file = exercise_answer.file_id
                                 type_img = 'variant_img'
@@ -459,7 +487,7 @@ def exercise_profile(exercise_id):
         return edit_msg(exercise.name, status=True, data=exercise.convert_json(entire=True))
 
 
-@app.route(f'{api}/delete_block/<int:block_id>', methods=['DELETE'])
+@exercise_bp.route(f'/delete_block/<int:block_id>', methods=['DELETE'])
 @jwt_required()
 def delete_block(block_id):
     block = ExerciseBlock.query.filter(ExerciseBlock.id == block_id).first()

@@ -129,7 +129,9 @@ class Chapter(db.Model):
             "level": self.subject_level.convert_json(),
             "lessons": [],
             "finished": None,
-            "percentage": None
+            "percentage": None,
+            "disabled": self.disabled,
+            "status": self.status
         }
         if entire:
             for lesson in self.lesson:

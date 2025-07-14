@@ -2,7 +2,7 @@ import datetime
 
 import requests
 
-from app import api, app, cross_origin, db, request, jsonify, gennis_server_url, turon_server_url
+from app import api, app, cross_origin, db, request, jsonify
 from backend.models.settings import iterate_models
 from backend.models.basic_model import Role, Teacher, User, Student, Location, Subject, SubjectLevel, Group, \
     StudentSubject
@@ -12,6 +12,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from .settings import check_exist_id, check_exist_classroom_id
 import uuid
 import hashlib
+from backend.configs import api, gennis_server_url, turon_server_url
 
 
 @app.route(f'{api}/token', methods=["POST", "GET"])

@@ -24,6 +24,16 @@ def make_attendance_classroom():
         return jsonify(response.json())
 
 
+@app.route(f'{api}/delete_attendance_classroom/<int:attendance_id>/<int:student_id>/<int:group_id>', methods=['GET'])
+@jwt_required()
+def delete_attendance_classroom(attendance_id, student_id, group_id):
+    indentity = get_jwt_identity()
+    user = User.query.filter(User.classroom_user_id == indentity).first()
+    if user.system_name == "gennis":
+        response = requests.get(
+            f"{gennis_server_url}/api/delete_attendance_classroom/{attendance_id}/{student_id}/{group_id}")
+        return jsonify(response.json())
+
 
 @app.route(f'{api}/group_dates2/<int:group_id>')
 @jwt_required()
@@ -38,7 +48,7 @@ def group_dates2(group_id):
     pass
 
 
-@app.route(f'{api}/attendances/<group_id>',methods=['GET','POST'])
+@app.route(f'{api}/attendances/<group_id>', methods=['GET', 'POST'])
 @jwt_required()
 def attendances(group_id):
     indentity = get_jwt_identity()

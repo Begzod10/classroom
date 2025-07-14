@@ -1,4 +1,4 @@
-from app import api, app, request, jsonify, db, jwt_required, get_jwt_identity, gennis_server_url, turon_server_url
+from app import  app, request, jsonify, db, jwt_required, get_jwt_identity
 from backend.models.basic_model import User, Student, Role, Subject, Teacher, StudentSubject
 from backend.basics.settings import create_msg, edit_msg, del_msg
 import requests
@@ -7,7 +7,7 @@ from .utils import check_group_info, check_user_gennis, check_user_turon, check_
     add_gennis_user_data, add_parent_gennis
 from flask_jwt_extended import create_access_token, create_refresh_token
 from werkzeug.security import generate_password_hash, check_password_hash
-
+from backend.configs import api, gennis_server_url, turon_server_url
 
 @app.route(f'{api}/login', methods=['POST'])
 def login():

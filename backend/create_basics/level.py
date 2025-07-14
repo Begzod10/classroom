@@ -1,30 +1,24 @@
-from app import app, api, db, request, jsonify, gennis_server_url, turon_server_url
+from app import db, request, jsonify
 from flask_jwt_extended import get_jwt_identity, jwt_required
 from backend.models.basic_model import User, SubjectLevel, StudentLevel, Student
 from backend.basics.settings import create_msg, edit_msg, del_msg
 from backend.models.settings import iterate_models, send_subject_server
 import requests
+from backend.configs import gennis_server_url
+from flask import Blueprint
+
+level_bp = Blueprint('level_folder', __name__)
 
 
-@app.route(f'{api}/info_level/<int:subject_id>', methods=['POST', 'GET'])
+@level_bp.route(f'/info/<int:subject_id>', methods=['POST', 'GET'])
 @jwt_required()
 def info_level(subject_id):
     identity = get_jwt_identity()
     user = User.query.filter(User.classroom_user_id == identity).first()
-    # if user.student:
-    # subject_levels = SubjectLevel.query.filter(SubjectLevel.subject_id == subject_id,
-    #                                            SubjectLevel.disabled == False,
-    #                                            SubjectLevel.lesson != None).order_by(SubjectLevel.id).all()
-    # else:
     subject_levels = SubjectLevel.query.filter(SubjectLevel.subject_id == subject_id,
                                                SubjectLevel.disabled == False).order_by(SubjectLevel.id).all()
     server_levels = SubjectLevel.query.order_by(
         SubjectLevel.id).all()
-    # send_subject_server("levels", platform_server, server_levels)
-    # subjects = SubjectLevel.query.order_by(SubjectLevel.id).all()
-    # requests.post(f"{django_server}/api/Subjects/subject_level_create/", headers={
-    #     'Content-Type': 'application/json'
-    # }, json={"data": iterate_models(subjects)})
     if user.student:
         student = Student.query.filter(Student.user_id == user.id).first()
         student_level = StudentLevel.query.filter(StudentLevel.subject_id == subject_id,
@@ -33,7 +27,6 @@ def info_level(subject_id):
         return jsonify({
             "data": iterate_models(student_level)
         })
-
     if request.method == "POST":
         get_json = request.get_json()
         name = get_json['name']
@@ -58,7 +51,7 @@ def info_level(subject_id):
         })
 
 
-@app.route(f'{api}/deleted_levels/<int:subject_id>')
+@level_bp.route(f'/deleted/<int:subject_id>')
 @jwt_required()
 def deleted_levels(subject_id):
     subject_levels = SubjectLevel.query.filter(SubjectLevel.subject_id == subject_id,
@@ -68,18 +61,18 @@ def deleted_levels(subject_id):
     })
 
 
-@app.route(f'{api}/level/<int:level_id>')
+@level_bp.route(f'/profile/<int:level_id>')
 @jwt_required()
-def level(level_id):
+def profile(level_id):
     level_get = SubjectLevel.query.filter(SubjectLevel.id == level_id).first()
     return jsonify({
         "data": level_get.convert_json()
     })
 
 
-@app.route(f'{api}/edit_level/<int:level_id>', methods=['POST', 'DELETE'])
+@level_bp.route(f'/crud/<int:level_id>', methods=['POST', 'DELETE'])
 @jwt_required()
-def edit_level(level_id):
+def crud(level_id):
     if request.method == "POST":
         get_json = request.get_json()
         name = get_json['name']

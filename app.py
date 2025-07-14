@@ -15,6 +15,7 @@ from backend.extentions import celery_init_app
 from dotenv import load_dotenv
 from backend.extentions import db, migrate, jwt, api, cors, admin
 from backend.pisa.api.views import register_pisa_views
+from backend.create_basics.views import register_create_basics
 
 load_dotenv()
 
@@ -41,6 +42,7 @@ def create_app():
     )
     api = '/api'
     register_pisa_views(api, app)
+    register_create_basics(api, app)
     # register_commands(app)
     # register_teacher_views(app)
     return app
@@ -48,10 +50,7 @@ def create_app():
 
 app = create_app()
 
-api = '/api'
-gennis_server_url = os.getenv('GENNIS_SERVER_URL')
 
-turon_server_url = os.getenv('TURON_SERVER_URL')
 
 # basics
 from backend.basics.views import *

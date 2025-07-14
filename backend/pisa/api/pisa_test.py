@@ -8,8 +8,6 @@ from flask import Blueprint
 crud_test_pisa_bp = Blueprint('test_pisa', __name__)
 
 
-# @app.route(f'{api}/crud_pisa_test', defaults={'pk': None}, methods=['GET', 'POST', 'PUT', 'DELETE'])
-# @app.route(f'{api}/crud_pisa_test/<pk>', methods=['GET', 'POST', 'PUT', 'DELETE'])
 @crud_test_pisa_bp.route(f'/test/crud', defaults={'pk': None}, methods=['GET', 'POST', 'PUT', 'DELETE'])
 @crud_test_pisa_bp.route(f'/test/crud/<pk>', methods=['GET', 'POST', 'PUT', 'DELETE'])
 def crud_pisa_test(pk):
@@ -21,10 +19,7 @@ def crud_pisa_test(pk):
         pisa_test = Pisa.query.filter_by(id=pk).first()
         pisa_test.name = request.get_json()['name']
         pisa_test.status = request.get_json()['status']
-        # other_pisa_tests = Pisa.query.filter(Pisa.id != pisa_test.id).all()
-        # for other_pisa_test in other_pisa_tests:
-        #     other_pisa_test.status = False
-        #     db.session.commit()
+
         db.session.commit()
         return jsonify({"msg": "pisa muvaffaqiyatli o'zgartirildi", "success": True})
     elif request.method == "DELETE":
@@ -101,7 +96,6 @@ def crud_pisa_test(pk):
         return jsonify(info)
 
 
-# @app.route(f'{api}/pisa_test_list/<deleted>')
 @crud_test_pisa_bp.route(f'/list/<deleted>')
 def pisa_test_list(deleted):
     if deleted == 'true':
