@@ -102,17 +102,3 @@ def student_tests(group_id, month, year):
     )
     datas_response = response.json()
     return jsonify(datas_response)
-
-
-# @get_parent_bp.route('/student_tests/<group_id>/<month>/<year>', methods=['GET'])
-# def student_tests(group_id, month, year):
-#     group_id = int(group_id)
-#     month = int(month.lstrip("0"))
-#     year = int(year)
-#
-#     response = requests.get(
-#         f"{gennis_server_url}/api/filter_test_classroom/{group_id}/{month}/{year}",
-#         headers={'Content-Type': 'application/json'}
-#     )
-#     datas_response = response.json()
-#     return jsonify(datas_response)
