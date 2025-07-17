@@ -9,6 +9,10 @@ import uuid
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
 
 
+gennis_server_url = "http://192.168.1.19:5002"
+# gennis_server_url = os.getenv('GENNIS_SERVER_URL')
+
+
 def check_file(filename):
     value = '.' in filename
     type_file = filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS

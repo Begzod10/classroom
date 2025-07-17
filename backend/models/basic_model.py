@@ -62,6 +62,7 @@ class User(db.Model):
     platform_id = Column(Integer)
     age = Column(Integer)
     student = relationship('Student', backref='user', uselist=False, order_by="Student.id", lazy="select")
+    parent = relationship('Parent', backref='user', uselist=False, order_by="Parent.id", lazy="select")
     teacher = relationship("Teacher", backref="user", order_by="Teacher.id", lazy="select")
     question_answers = relationship('QuestionAnswers', backref='user', order_by="QuestionAnswers.id", lazy="dynamic")
     question_answer_comment = relationship('QuestionAnswerComment', backref='user', order_by="QuestionAnswerComment.id",
@@ -134,6 +135,7 @@ class Student(db.Model):
     representative_surname = Column(String)
     student_comments = relationship("StudentCommentForLesson", backref="student",
                                     order_by="StudentCommentForLesson.id")
+    parent_get = relationship('Parent', secondary="parent_child", backref="student", lazy="select")
 
     def add_commit(self):
         db.session.add(self)
