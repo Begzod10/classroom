@@ -16,6 +16,7 @@ from dotenv import load_dotenv
 from backend.extentions import db, migrate, jwt, api, cors, admin
 from backend.pisa.api.views import register_pisa_views
 from backend.parent.views import register_parent_views
+from backend.mobile.parent.urls import register_mobile_parent_views
 
 load_dotenv()
 
@@ -43,6 +44,7 @@ def create_app():
     api = '/api'
     register_pisa_views(api, app)
     register_parent_views(api, app)
+    register_mobile_parent_views(api, app)
     # register_commands(app)
     # register_teacher_views(app)
     return app
