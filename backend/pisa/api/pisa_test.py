@@ -1,40 +1,76 @@
 import pprint
+from flask import Blueprint, request, jsonify
+from flasgger import swag_from
 
-from app import app, db, api, request, jsonify
+from app import db
 from backend.models.basic_model import Pisa, PisaBlockText, PisaBlockTextAnswer, PisaBlockQuestionOptions
-from backend.models.settings import iterate_models
-from flask import Blueprint
 
 crud_test_pisa_bp = Blueprint('test_pisa', __name__)
 
 
-@crud_test_pisa_bp.route(f'/test/crud', defaults={'pk': None}, methods=['GET', 'POST', 'PUT', 'DELETE'])
-@crud_test_pisa_bp.route(f'/test/crud/<pk>', methods=['GET', 'POST', 'PUT', 'DELETE'])
+@crud_test_pisa_bp.route('/test/crud', defaults={'pk': None}, methods=['GET', 'POST', 'PUT', 'DELETE'])
+@crud_test_pisa_bp.route('/test/crud/<pk>', methods=['GET', 'POST', 'PUT', 'DELETE'])
+# @swag_from({
+#     'tags': ['Pisa'],
+#     'parameters': [
+#         {
+#             'name': 'pk',
+#             'in': 'path',
+#             'type': 'integer',
+#             'required': False,
+#             'description': 'Pisa test ID (optional for POST)'
+#         }
+#     ],
+#     'responses': {
+#         200: {
+#             'description': 'Successful Pisa operation response',
+#             'schema': {
+#                 'type': 'object',
+#                 'properties': {
+#                     'msg': {'type': 'string'},
+#                     'success': {'type': 'boolean'},
+#                     'id': {'type': 'integer'}
+#                 }
+#             },
+#             'examples': {
+#                 'application/json': {
+#                     'msg': 'pisa muvaffaqiyatli yaratildi',
+#                     'success': True,
+#                     'id': 1
+#                 }
+#             }
+#         }
+#     }
+# })
 def crud_pisa_test(pk):
     if request.method == "POST":
         pisa_test = Pisa(name="unnamed", status=False)
         pisa_test.add()
         return jsonify({"msg": "pisa muvaffaqiyatli yaratildi", "success": True, 'id': pisa_test.id})
+
     elif request.method == "PUT":
         pisa_test = Pisa.query.filter_by(id=pk).first()
-        pisa_test.name = request.get_json()['name']
-        pisa_test.status = request.get_json()['status']
-
+        if not pisa_test:
+            return jsonify({"msg": "Not found", "success": False}), 404
+        data = request.get_json()
+        pisa_test.name = data.get('name', pisa_test.name)
+        pisa_test.status = data.get('status', pisa_test.status)
         db.session.commit()
         return jsonify({"msg": "pisa muvaffaqiyatli o'zgartirildi", "success": True})
+
     elif request.method == "DELETE":
         pisa_test = Pisa.query.filter_by(id=pk).first()
+        if not pisa_test:
+            return jsonify({"msg": "Not found", "success": False}), 404
         pisa_test.deleted = True
         db.session.commit()
         return jsonify({"msg": "pisa muvaffaqiyatli o'chirildi", "success": True})
+
     elif request.method == "GET":
         pisa_test = Pisa.query.filter_by(id=pk).first()
-        pisa_blocks_left = PisaBlockText.query.filter(PisaBlockText.pisa_id == pisa_test.id,
-                                                      PisaBlockText.position == 'left').order_by(
-            PisaBlockText.index).all()
-        pisa_blocks_right = PisaBlockText.query.filter(PisaBlockText.pisa_id == pisa_test.id,
-                                                       PisaBlockText.position == 'right').order_by(
-            PisaBlockText.index).all()
+        if not pisa_test:
+            return jsonify({"msg": "Not found", "success": False}), 404
+
         info = {
             'pisa_id': pisa_test.id,
             'name': pisa_test.name,
@@ -42,64 +78,85 @@ def crud_pisa_test(pk):
             'pisa_blocks_left': [],
             'pisa_blocks_right': []
         }
-        for pisa_block in pisa_blocks_left:
-            block_text_answers = PisaBlockTextAnswer.query.filter_by(pisa_block_id=pisa_block.id).order_by(
+
+        blocks = PisaBlockText.query.filter_by(pisa_id=pisa_test.id).order_by(PisaBlockText.index).all()
+
+        for block in blocks:
+            answers = PisaBlockTextAnswer.query.filter_by(pisa_block_id=block.id).order_by(
                 PisaBlockTextAnswer.index).all()
-            block_text_options = PisaBlockQuestionOptions.query.filter_by(pisa_block_id=pisa_block.id).order_by(
+            options = PisaBlockQuestionOptions.query.filter_by(pisa_block_id=block.id).order_by(
                 PisaBlockQuestionOptions.index).all()
-            info_left = {
-                'id': pisa_block.id,
-                'pisa_id': pisa_block.pisa_id,
-                'text': pisa_block.text,
-                'position': pisa_block.position,
-                'index': pisa_block.index,
-                'type': pisa_block.type_block,
-                'completed': pisa_block.completed,
-                'words': pisa_block.words,
-                'editorState': pisa_block.editorState,
-                'typeVariants': pisa_block.typeVariants,
-                'type_question': pisa_block.type_question,
-                'image_url': pisa_block.file.url if pisa_block.file else None,
-                'innerType': pisa_block.innerType,
-                'video_url': pisa_block.video_url,
-                'answers': [answer.convert_json() for answer in block_text_answers],
-                'options': [option.convert_json() for option in block_text_options],
-                'can_delete': True if not pisa_block.answers_students and not pisa_block.options_students else False
+
+            block_info = {
+                'id': block.id,
+                'pisa_id': block.pisa_id,
+                'text': block.text,
+                'position': block.position,
+                'index': block.index,
+                'type': block.type_block,
+                'completed': block.completed,
+                'words': block.words,
+                'editorState': block.editorState,
+                'typeVariants': block.typeVariants,
+                'type_question': block.type_question,
+                'image_url': block.file.url if block.file else None,
+                'file': block.file.url if block.file else None,
+                'innerType': block.innerType,
+                'video_url': block.video_url,
+                'answers': [a.convert_json() for a in answers],
+                'options': [o.convert_json() for o in options],
+                'can_delete': not block.answers_students and not block.options_students
             }
-            info['pisa_blocks_left'].append(info_left)
-        for pisa_block in pisa_blocks_right:
-            block_text_answers = PisaBlockTextAnswer.query.filter_by(pisa_block_id=pisa_block.id).order_by(
-                PisaBlockTextAnswer.index).all()
-            block_text_options = PisaBlockQuestionOptions.query.filter_by(pisa_block_id=pisa_block.id).order_by(
-                PisaBlockQuestionOptions.index).all()
-            info_right = {
-                'id': pisa_block.id,
-                'pisa_id': pisa_block.pisa_id,
-                'text': pisa_block.text,
-                'position': pisa_block.position,
-                'index': pisa_block.index,
-                'type': pisa_block.type_block,
-                'completed': pisa_block.completed,
-                'words': pisa_block.words,
-                'image_url': pisa_block.file.url if pisa_block.file else None,
-                'innerType': pisa_block.innerType,
-                'editorState': pisa_block.editorState,
-                'typeVariants': pisa_block.typeVariants,
-                'type_question': pisa_block.type_question,
-                'video_url': pisa_block.video_url,
-                'answers': [answer.convert_json() for answer in block_text_answers],
-                'options': [option.convert_json() for option in block_text_options],
-                'can_delete': True if not pisa_block.answers_students and not pisa_block.options_students else False
-            }
-            info['pisa_blocks_right'].append(info_right)
+
+            if block.position == 'left':
+                info['pisa_blocks_left'].append(block_info)
+            else:
+                info['pisa_blocks_right'].append(block_info)
 
         return jsonify(info)
 
 
-@crud_test_pisa_bp.route(f'/list/<deleted>')
+@crud_test_pisa_bp.route('/list/<deleted>')
+# @swag_from({
+#     'tags': ['Pisa'],
+#     'parameters': [
+#         {
+#             'name': 'deleted',
+#             'in': 'path',
+#             'type': 'string',
+#             'enum': ['true', 'false'],
+#             'required': True,
+#             'description': 'Filter by deletion status (true = deleted, false = active)'
+#         }
+#     ],
+#     'responses': {
+#         200: {
+#             'description': 'List of Pisa tests',
+#             'schema': {
+#                 'type': 'array',
+#                 'items': {
+#                     'type': 'object',
+#                     'properties': {
+#                         'id': {'type': 'integer'},
+#                         'name': {'type': 'string'},
+#                         'status': {'type': 'boolean'},
+#                         # Add more fields from convert_json() if needed
+#                     }
+#                 }
+#             },
+#             'examples': {
+#                 'application/json': [
+#                     {'id': 1, 'name': 'Math Test', 'status': True},
+#                     {'id': 2, 'name': 'Science Test', 'status': False}
+#                 ]
+#             }
+#         }
+#     }
+# })
 def pisa_test_list(deleted):
     if deleted == 'true':
         pisa_tests = Pisa.query.filter_by(deleted=True).all()
     else:
         pisa_tests = Pisa.query.filter_by(deleted=False).all()
-    return jsonify([pisa_test.convert_json() for pisa_test in pisa_tests])
+
+    return jsonify([test.convert_json() for test in pisa_tests])

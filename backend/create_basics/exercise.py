@@ -8,499 +8,554 @@ from pprint import pprint
 from flask_jwt_extended import jwt_required
 from flask import Blueprint
 
+from flasgger import swag_from
+
 exercise_bp = Blueprint('exercise_folder', __name__)
 
 
-@exercise_bp.route(f'/info/', methods=['POST', 'GET'])
+@exercise_bp.route(f'/crud/', defaults={'pk': None}, methods=['POST', 'PUT', 'GET', 'DELETE'])
+@exercise_bp.route(f'/crud/<pk>/', methods=['POST', 'PUT', 'GET', 'DELETE'])
+@swag_from({"tags": ["Exercise"]},
+           methods=['POST', 'PUT', 'GET', 'DELETE'])
 @jwt_required()
-def info_exercise():
+def crud(pk):
     if request.method == "POST":
-        info = request.form.get("info")
-        get_json = json.loads(info)
-        selected_level = get_json['selectedLevel']
-        selected_subject = get_json['selectedSubject']
-        name = get_json['title']
-        exercise_type = get_json['typeEx']
-        components = get_json['components']
-        get_exercise_type = ExerciseTypes.query.filter(ExerciseTypes.id == exercise_type).first()
-        get_level = SubjectLevel.query.filter(SubjectLevel.id == selected_level).first()
-        get_subject = Subject.query.filter(Subject.id == selected_subject).first()
+        exercise = Exercise(name='unnamed')
+        exercise.add_commit()
+        return create_msg('unnamed', status=True, data=exercise.convert_json())
+    elif request.method == "PUT":
+
+        get_json = request.get_json()
         random_status = False
 
         if 'random' in get_json:
             random_status = get_json['random']
-        exist = Exercise.query.filter(Exercise.name == name).first()
-        if not exist:
-            add_exercise = Exercise(name=name, level_id=get_level.id, random_status=random_status,
-                                    type_id=get_exercise_type.id,
-                                    subject_id=get_subject.id)
-            add_exercise.add_commit()
-
-            for component in components:
-                type_component = component['type']
-                text = ''
-                if 'text' in component:
-                    text = component['text']
-                get_component = Component.query.filter(Component.name == type_component).first()
-                if not get_component:
-                    get_component = Component(name=type_component)
-                    get_component.add_commit()
-
-                audio_url = None
-                if type_component == "audio":
-                    audio = request.files.get(f'component-{component["index"]}-audio')
-                    audio_url = add_file(audio, type_file="audio", app=current_app, File=File)
-
-                word_img = request.files.get(f'component-{component["index"]}-img')
-                get_img = None
-                if word_img:
-                    get_img = add_file(word_img, type_file="img", app=current_app, File=File)
-                inner_type = ''
-                if 'innerType' in component:
-                    inner_type = component['innerType']
-                clone = ''
-                if 'clone' in component:
-                    clone = component['clone']
-                if 'editorState' in component:
-                    clone = component['editorState']
-                if type_component == "question":
-                    clone = component
-                add_exe = ExerciseBlock(desc=text, exercise_id=add_exercise.id, component_id=get_component.id,
-                                        clone=clone, img_info=get_img, audio_info=audio_url,
-                                        inner_type=inner_type)
-                add_exe.add_commit()
-                if type_component == "text":
-                    if "words" in component:
-                        add_exe.for_words = component['words']
-                        db.session.commit()
-                        for word in component['words']:
-                            exercise_answer = ExerciseAnswers(
-                                exercise_id=add_exercise.id,
-                                block_id=add_exe.id,
-                                desc=word['text'], order=word['index'])
-                            db.session.add(exercise_answer)
-                            db.session.commit()
-                if type_component == "question" and inner_type == "imageInText":
-
-                    for word in component['words']:
-
-                        if 'active' in word:
-                            get_img = None
-                            type_img = ''
-                            word_img = request.files.get(f'component-{component["index"]}-words-index-{word["id"]}')
-                            if word_img:
-                                get_img = add_file(word_img, type_file="img", app=current_app, File=File)
-                                block_img = ExerciseBlockImages(file_id=get_img, block_id=add_exe.id, order=word['id'],
-                                                                type_image="word")
-                                block_img.add_commit()
-                            else:
-                                answer_exercise = ExerciseAnswers(exercise_id=add_exercise.id,
-                                                                  subject_id=get_subject.id,
-                                                                  level_id=get_level.id, desc=word['word'],
-                                                                  file_id=get_img,
-                                                                  type_id=get_exercise_type.id, order=word['id'],
-                                                                  block_id=add_exe.id,
-                                                                  status=word['active'], type_img=type_img)
-                                answer_exercise.add_commit()
-                        if 'type' in word:
-                            answer_exercise = ExerciseAnswers(exercise_id=add_exercise.id, subject_id=get_subject.id,
-                                                              level_id=get_level.id, desc=word['text'],
-                                                              type_id=get_exercise_type.id, order=word['index'],
-                                                              block_id=add_exe.id)
-                            answer_exercise.add_commit()
-
-                if 'variants' in component:
-
-                    type_img = ''
-                    if component['variants']['type'] == "select":
-                        for option in component['variants']['options']:
-                            if option['innerType'] == "text":
-                                get_img = None
-                                type_img = ''
-                            else:
-
-                                word_img = request.files.get(
-                                    f'component-{component["index"]}-variants-index-{option["index"]}')
-                                get_img = add_file(word_img, type_file="img", app=current_app, File=File)
-                                type_img = 'variant_img'
-
-                            answer_exercise = ExerciseAnswers(exercise_id=add_exercise.id, subject_id=get_subject.id,
-                                                              level_id=get_level.id, desc=option['text'],
-                                                              file_id=get_img, status=option['isTrue'],
-                                                              type_id=get_exercise_type.id, order=option['index'],
-                                                              type_img=type_img, block_id=add_exe.id)
-
-                            answer_exercise.add_commit()
-                    else:
-                        answer_exercise = ExerciseAnswers(exercise_id=add_exercise.id, subject_id=get_subject.id,
-                                                          level_id=get_level.id, desc=component['variants']['answer'],
-                                                          type_img=type_img,
-                                                          type_id=get_exercise_type.id, status=True,
-                                                          block_id=add_exe.id)
-
-                        answer_exercise.add_commit()
-            return create_msg(name, True)
-
-        else:
+        selected_level = get_json['level']
+        selected_subject = get_json['subject']
+        name = get_json['title']
+        exercise_type = get_json['type']
+        get_exercise_type = ExerciseTypes.query.filter(ExerciseTypes.id == exercise_type).first()
+        get_level = SubjectLevel.query.filter(SubjectLevel.id == selected_level).first()
+        get_subject = Subject.query.filter(Subject.id == selected_subject).first()
+        exercise = Exercise.query.filter(Exercise.id == pk).first()
+        exercise.name = name
+        exercise.random_status = random_status
+        if get_level:
+            exercise.level_id = get_level.id
+        if get_exercise_type:
+            exercise.type_id = get_exercise_type.id
+        if get_subject:
+            exercise.subject_id = get_subject.id
+        db.session.commit()
+        return edit_msg(name, True, exercise.convert_json())
+    elif request.method == "GET":
+        if pk:
+            exercise = Exercise.query.filter(Exercise.id == pk).first()
             return jsonify({
-                "msg": f"Bu {name} nomdagi mashq yaratilgan"
+                "data": exercise.convert_json()
             })
-    else:
-        page = int(request.args.get('page', 1))
-        per_page = int(request.args.get('per_page', 50))
-        search = request.args.get('search', '').strip()
-        subject_id = request.args.get('subject', '').strip()
-        type_id = request.args.get('type', '').strip()
-        level_id = request.args.get('level', '').strip()
+        else:
+            page = int(request.args.get('page', 1))
+            per_page = int(request.args.get('per_page', 50))
+            search = request.args.get('search', '').strip()
+            subject_id = request.args.get('subject', '').strip()
+            type_id = request.args.get('type', '').strip()
+            level_id = request.args.get('level', '').strip()
 
-        query = Exercise.query
+            query = Exercise.query
+            if search:
+                query = query.filter(Exercise.name.ilike(f"%{search}%"))
 
-        # Apply filters dynamically
-        if search:
-            query = query.filter(Exercise.name.ilike(f"%{search}%"))
+            if subject_id and subject_id != "all":
+                query = query.filter(Exercise.subject_id == subject_id)
 
-        if subject_id and subject_id != "all":
-            query = query.filter(Exercise.subject_id == subject_id)
+            if type_id and type_id != "all":
+                query = query.filter(Exercise.type_id == type_id)
 
-        if type_id and type_id != "all":
-            query = query.filter(Exercise.type_id == type_id)
+            if level_id and level_id != "all":
+                query = query.filter(Exercise.level_id == level_id)
 
-        if level_id and level_id != "all":
-            query = query.filter(Exercise.level_id == level_id)
+            exercises = query.order_by(Exercise.id.desc()).paginate(page=page, per_page=per_page, error_out=False)
 
-        exercises = query.order_by(Exercise.id.desc()).paginate(page=page, per_page=per_page, error_out=False)
-
-        return jsonify({
-            "data": iterate_models(exercises.items, entire=True),
-            "total": exercises.total,
-            "page": exercises.page,
-            "pages": exercises.pages,
-            "per_page": exercises.per_page,
-            "has_next": exercises.has_next,
-            "has_prev": exercises.has_prev
-        })
-
-
-@exercise_bp.route(f'/exercise_profile/<int:exercise_id>', methods=['POST', 'GET', 'DELETE'])
-@jwt_required()
-def exercise_profile(exercise_id):
-    if request.method == "GET":
-        exercise = Exercise.query.filter(Exercise.id == exercise_id).first()
-
-        return jsonify({
-            "data": exercise.convert_json(entire=True)
-        })
+            return jsonify({
+                "data": iterate_models(exercises.items, entire=True),
+                "total": exercises.total,
+                "page": exercises.page,
+                "pages": exercises.pages,
+                "per_page": exercises.per_page,
+                "has_next": exercises.has_next,
+                "has_prev": exercises.has_prev
+            })
     elif request.method == "DELETE":
-        exercise = Exercise.query.filter(Exercise.id == exercise_id).first()
-        name = exercise.name
-        blocks = ExerciseBlock.query.filter(ExerciseBlock.exercise_id == exercise_id).all()
+        exercise = Exercise.query.filter(Exercise.id == pk).first()
+        blocks = ExerciseBlock.query.filter(ExerciseBlock.exercise_id == exercise.id).all()
         for block in blocks:
             block_img = ExerciseBlockImages.query.filter(ExerciseBlockImages.block_id == block.id).all()
             for img in block_img:
                 check_img_remove(img.img_id, File=File)
                 img.delete_commit()
-        exercise_answers = ExerciseAnswers.query.filter(ExerciseAnswers.exercise_id == exercise_id).all()
-        donelessons = StudentExercise.query.filter(StudentExercise.exercise_id == exercise_id).all()
-        # try:
+        exercise_answers = ExerciseAnswers.query.filter(ExerciseAnswers.exercise_id == exercise.id).all()
+        donelessons = StudentExercise.query.filter(StudentExercise.exercise_id == exercise.id).all()
+
         delete_list_models(blocks, File, type="double")
         delete_list_models(exercise_answers, File)
         delete_list_models(donelessons, File)
         exercise.delete_commit()
-        return del_msg(item=name, status=True)
-        # except:
-        #     return del_msg(item=name, status=False)
-    elif request.method == "POST":
-        info = request.form.get("info")
-        get_json = json.loads(info)
-        selected_level = get_json['selectedLevel']
-        selected_subject = get_json['selectedSubject']
-        name = get_json['title']
-        exercise_type = get_json['typeEx']
-        components = get_json['components']
-        random_status = False
-        if 'random' in get_json:
-            random_status = get_json['random']
-        get_exercise_type = ExerciseTypes.query.filter(ExerciseTypes.id == exercise_type).first()
-        get_level = SubjectLevel.query.filter(SubjectLevel.id == selected_level).first()
-        get_subject = Subject.query.filter(Subject.id == selected_subject).first()
-        Exercise.query.filter(Exercise.id == exercise_id).update({
-            "subject_id": get_subject.id,
-            "type_id": get_exercise_type.id,
-            "level_id": get_level.id,
-            "name": name,
-            "random_status": random_status
-        })
-        db.session.commit()
-        exercise = Exercise.query.filter(Exercise.id == exercise_id).first()
-        order = 0
-
-        for component in components:
-
-            type_component = component['type']
-            get_component = Component.query.filter(Component.name == type_component).first()
-            if not get_component:
-                get_component = Component(name=type_component)
-                get_component.add_commit()
-            text = ''
-            if 'text' in component:
-                text = component['text']
-            audio_url = None
-            if type_component == "audio":
-                audio = request.files.get(f'component-{component["index"]}-audio')
-                if audio:
-                    audio_url = add_file(audio, "audio", current_app, File)
-
-            word_img = request.files.get(f'component-{component["index"]}-img')
-            get_file = None
-            if word_img:
-                get_file = add_file(word_img, type_file="img", app=current_app, File=File)
-
-            inner_type = ''
-            clone = component
-            if 'editorState' in component:
-                clone = component['editorState']
-            if 'clone' in component:
-                clone = component['clone']
-            if type_component == "question":
-                clone = component
-            if 'innerType' in component:
-                inner_type = component['innerType']
-            if 'block_id' not in component:
-                print(True)
-                block = ExerciseBlock(desc=text, exercise_id=exercise.id, component_id=get_component.id,
-                                      clone=clone, img_info=get_file, audio_info=audio_url,
-                                      inner_type=inner_type, order=order)
-                block.add_commit()
-                audio_url = None
-                if type_component == "text":
-                    if "words" in component:
-                        block.for_words = component['words']
-                        db.session.commit()
-                        for word in component['words']:
-                            exercise_answer = ExerciseAnswers(
-                                exercise_id=exercise.id,
-                                block_id=block.id,
-                                desc=word['text'], order=word['index'])
-                            db.session.add(exercise_answer)
-                            db.session.commit()
-                if type_component == "question" and inner_type == "imageInText":
-
-                    for word in component['words']:
-
-                        if 'active' in word:
-                            get_img = None
-                            type_img = ''
-                            word_img = request.files.get(f'component-{component["index"]}-words-index-{word["id"]}')
-                            if word_img:
-                                get_img = add_file(word_img, type_file="img", app=current_app, File=File)
-                                block_img = ExerciseBlockImages(file_id=get_img, block_id=block.id, order=word['id'],
-                                                                type_image="word")
-                                block_img.add_commit()
-                            else:
-                                answer_exercise = ExerciseAnswers(exercise_id=exercise.id,
-                                                                  subject_id=get_subject.id,
-                                                                  level_id=get_level.id, desc=word['word'],
-                                                                  file_id=get_img,
-                                                                  type_id=get_exercise_type.id, order=word['id'],
-                                                                  block_id=block.id,
-                                                                  status=word['active'], type_img=type_img)
-                                answer_exercise.add_commit()
-                        if 'type' in word:
-                            answer_exercise = ExerciseAnswers(exercise_id=exercise.id, subject_id=get_subject.id,
-                                                              level_id=get_level.id, desc=word['text'],
-                                                              type_id=get_exercise_type.id, order=word['index'],
-                                                              block_id=block.id)
-                            answer_exercise.add_commit()
-                if 'variants' in component:
-                    if component['variants']['type'] == "select":
-                        for option in component['variants']['options']:
-                            if option['innerType'] == "text":
-                                get_file = None
-                                type_img = ''
-                            else:
-                                word_img = request.files.get(
-                                    f'component-{component["index"]}-variants-index-{option["index"]}')
-                                if word_img:
-                                    get_file = add_file(word_img, type_file="img", app=current_app, File=File)
-                                type_img = 'variant_img'
-                            answer_exercise = ExerciseAnswers(exercise_id=exercise.id, subject_id=get_subject.id,
-                                                              level_id=get_level.id, desc=option['text'],
-                                                              file_id=get_file, status=option['isTrue'],
-                                                              type_id=get_exercise_type.id, order=option['index'],
-                                                              type_img=type_img, block_id=block.id)
-
-                            answer_exercise.add_commit()
-                    else:
-                        type_img = ''
-                        answer_exercise = ExerciseAnswers(exercise_id=exercise.id, subject_id=get_subject.id,
-                                                          level_id=get_level.id, desc=component['variants']['answer'],
-                                                          type_img=type_img, order=0,
-                                                          type_id=get_exercise_type.id, status=True, block_id=block.id)
-
-                        answer_exercise.add_commit()
-            else:
-                if 'clone' in component:
-                    clone = component['clone']
-                if 'editorState' in component:
-                    clone = component['editorState']
-                if type_component == "question":
-                    clone = component
-
-                block = ExerciseBlock.query.filter(ExerciseBlock.id == component['block_id']).first()
-                if not audio_url:
-                    if block.audio:
-                        audio_url = block.audio.id
-                else:
-                    if block.audio:
-                        check_img_remove(block.audio.id, File=File)
-                if not get_file:
-                    get_file = block.img_info
-                else:
-                    if block.img_info:
-                        check_img_remove(block.img_info, File=File)
-                block.desc = text
-                block.order = order
-                block.audio_info = audio_url
-                block.img_info = get_file
-                block.component_id = get_component.id
-                block.inner_type = component['innerType'] if 'innerType' in component else None
-                block.clone = clone
-                block.for_words = component['words'] if 'words' in component else None
-                db.session.commit()
-
-                if 'words' in component:
-                    for word in component['words']:
-                        if 'active' in word and word['active'] == True and inner_type == "image":
-                            exercise_answer = ExerciseAnswers.query.filter(
-                                ExerciseAnswers.block_id == component['block_id'],
-                                ExerciseAnswers.order == word['id']).first()
-
-                            word_img = request.files.get(f'component-{component["index"]}-words-index-{word["id"]}')
-                            block_img = ExerciseBlockImages.query.filter(
-                                ExerciseBlockImages.block_id == block.id).first()
-                            type_img = "question_img"
-                            if word_img:
-                                get_file = add_file(word_img, type_file="img", app=current_app, File=File)
-                            else:
-                                if block_img:
-                                    type_img = block_img.type_image
-                                    get_file = block_img.file_id
-
-                            if block_img:
-                                block_img.file_id = get_file
-                                block_img.type_image = type_img
-                            if exercise_answer:
-                                exercise_answer.desc = word['word']
-                                exercise_answer.status = word['active']
-                                exercise_answer.subject_id = get_subject.id
-                                exercise_answer.order = word['id']
-                                exercise_answer.block_id = block.id
-                                exercise_answer.type_id = get_exercise_type.id
-                                exercise_answer.level_id = get_level.id
-                                exercise_answer.exercise_id = exercise.id
-                            db.session.commit()
-                if type_component == "question" and inner_type == "imageInText":
-                    for word in component['words']:
-
-                        if 'active' in word:
-                            type_img = 'word'
-                            word_img = request.files.get(
-                                f'component-{component["index"]}-words-index-{word["id"]}')
-                            if word_img:
-                                get_img = add_file(word_img, type_file="img", app=current_app, File=File)
-                                block_img = ExerciseBlockImages.query.filter(
-                                    ExerciseBlockImages.block_id == block.id,
-                                    ExerciseBlockImages.order == word['id']).first()
-                                if block_img:
-                                    block_img.file_id = get_img
-                                    block_img.type_image = type_img
-                                else:
-                                    block_img = ExerciseBlockImages(file_id=get_img, block_id=block.id,
-                                                                    order=word['id'],
-                                                                    type_image="word")
-                                    block_img.add_commit()
-                if 'variants' in component:
-
-                    if component['variants']['type'] == "select":
-
-                        for option in component['variants']['options']:
-                            exercise_answer = ExerciseAnswers.query.filter(
-                                ExerciseAnswers.block_id == component['block_id'],
-                                ExerciseAnswers.order == option['index']).first()
-                            if option['innerType'] == "text":
-                                get_file = None
-                                type_img = ''
-
-                            else:
-                                word_img = request.files.get(
-                                    f'component-{component["index"]}-variants-index-{option["index"]}')
-
-                                if word_img:
-                                    get_file = add_file(word_img, type_file="img", app=current_app, File=File)
-                                else:
-                                    get_file = exercise_answer.file_id
-                                type_img = 'variant_img'
-                            if exercise_answer:
-                                exercise_answer.file_id = get_file
-                                exercise_answer.type_img = type_img
-                                exercise_answer.subject_id = get_subject.id
-                                exercise_answer.order = option['index']
-                                exercise_answer.block_id = block.id
-                                exercise_answer.type_id = get_exercise_type.id
-                                exercise_answer.level_id = get_level.id
-                                exercise_answer.exercise_id = exercise.id
-                                exercise_answer.desc = option['text']
-                                exercise_answer.status = option['isTrue']
-                                db.session.commit()
-                            else:
-                                exercise_answer = ExerciseAnswers(block_id=component['block_id'],
-                                                                  order=option['index'])
-                                exercise_answer.add_commit()
-                                exercise_answer.file_id = get_file
-                                exercise_answer.type_img = type_img
-                                exercise_answer.subject_id = get_subject.id
-                                exercise_answer.order = option['index']
-                                exercise_answer.block_id = block.id
-                                exercise_answer.type_id = get_exercise_type.id
-                                exercise_answer.level_id = get_level.id
-                                exercise_answer.exercise_id = exercise.id
-                                exercise_answer.desc = option['text']
-                                exercise_answer.status = option['isTrue']
-                                db.session.commit()
-                if 'type' in component:
-                    if component['type'] == "text":
-
-                        exercise_answer = ExerciseAnswers.query.filter(ExerciseAnswers.exercise_id == exercise_id,
-                                                                       ExerciseAnswers.block_id == component[
-                                                                           'block_id']).all()
-                        for ans in exercise_answer:
-                            db.session.delete(ans)
-                            db.session.commit()
-                        if 'words' in component:
-                            for word in component['words']:
-                                answer_exercise = ExerciseAnswers(exercise_id=exercise_id, subject_id=get_subject.id,
-                                                                  level_id=get_level.id, desc=word['text'],
-                                                                  type_id=get_exercise_type.id, order=word['index'],
-                                                                  block_id=block.id)
-                                answer_exercise.add_commit()
-            order += 1
-        return edit_msg(exercise.name, status=True, data=exercise.convert_json(entire=True))
+        return del_msg(exercise.name, True)
 
 
-@exercise_bp.route(f'/delete_block/<int:block_id>', methods=['DELETE'])
+@exercise_bp.route(f'block/text/editor/', defaults={"pk": None}, methods=['POST', "PUT", "DELETE"])
+@exercise_bp.route(f'block/text/editor/<pk>/', methods=['POST', "PUT", "DELETE"])
 @jwt_required()
-def delete_block(block_id):
-    block = ExerciseBlock.query.filter(ExerciseBlock.id == block_id).first()
-    exercise_answers = ExerciseAnswers.query.filter(ExerciseAnswers.block_id == block_id).all()
-    delete_list_models(exercise_answers, File)
-    if block.audio_info:
-        check_img_remove(block.audio_info, File=File)
-    if block.img_info:
-        check_img_remove(block.img_info, File=File)
-    block_img = ExerciseBlockImages.query.filter(ExerciseBlockImages.block_id == block_id).all()
-    for img in block_img:
-        check_img_remove(img.file_id, File=File)
-        img.delete_commit()
-    block.delete_commit()
+@swag_from({"tags": ["Exercise"],
+            "methods": ["POST", "PUT", "DELETE"]})
+def block_text_editor(pk):
+    if request.method == "POST" or request.method == "PUT":
+        exercise = Exercise.query.filter(Exercise.id == request.get_json()['exc_id']).first()
+        if request.method == "PUT":
+            clone = request.get_json()['editorState']
+            text = request.get_json()['text']
+            component = Component.query.filter(Component.name == "textEditor").first()
+            exercise_block = ExerciseBlock.query.filter(ExerciseBlock.id == pk).first()
+            exercise_block.desc = text
+            exercise_block.clone = clone
+            exercise_block.component_id = component.id
+            exercise_block.add_commit()
+            return jsonify(exercise_block.convert_json())
+        elif request.method == "POST":
+            clone = request.get_json()['editorState']
+            text = request.get_json()['text']
+            component = Component.query.filter(Component.name == "text").first()
+            last_block = ExerciseBlock.query.filter(ExerciseBlock.exercise_id == exercise.id).order_by(
+                ExerciseBlock.order.desc()).first()
+            order = last_block.order + 1 if last_block else 1
+            add_exe = ExerciseBlock(desc=text, exercise_id=exercise.id, component_id=component.id, clone=clone,
+                                    order=order)
+            add_exe.add_commit()
+            return jsonify(add_exe.convert_json())
+    elif request.method == "DELETE":
+        exercise_block = ExerciseBlock.query.filter(ExerciseBlock.id == pk).first()
+        exercise_block.delete_commit()
+        return del_msg("block", True)
 
-    return del_msg(item="block", status=True)
+
+@exercise_bp.route('block/text/', defaults={"pk": None}, methods=['POST', 'PUT', 'DELETE'])
+@exercise_bp.route('block/text/<pk>/', methods=['POST', 'PUT', 'DELETE'])
+@jwt_required()
+@swag_from({"tags": ["Exercise"], "methods": ["POST", "PUT", "DELETE"]})
+def block_text(pk):
+    method = request.method
+
+    if method in ("POST", "PUT"):
+        data = request.get_json()
+        exercise = Exercise.query.get(data.get('exc_id'))
+        component = Component.query.filter_by(name="text").first()
+        text = data.get('text')
+        words = data.get('words', [])
+        editor_state = data.get('editorState')
+
+        if not exercise or not component:
+            return jsonify({"success": False, "msg": "Invalid exercise or component"}), 400
+
+        subject = Subject.query.get(exercise.subject_id)
+        level = SubjectLevel.query.get(exercise.level_id)
+        exercise_type = ExerciseTypes.query.get(exercise.type_id)
+
+        if not subject or not level or not exercise_type:
+            return jsonify({"success": False, "msg": "Invalid subject, level, or type"}), 400
+
+        if method == "PUT":
+            exercise_block = ExerciseBlock.query.get(pk)
+            if not exercise_block:
+                return jsonify({"success": False, "msg": "Exercise block not found"}), 404
+
+            exercise_block.desc = text
+            exercise_block.component_id = component.id
+            exercise_block.clone = editor_state
+            exercise_block.for_words = words
+            exercise_block.add_commit()
+
+            # Update or preserve answers
+            existing_answers = {a.order: a for a in ExerciseAnswers.query.filter_by(block_id=pk).all()}
+            updated_orders = []
+
+            for word in words:
+                word_text = word.get('text', [''])[0]
+                word_index = word.get('index')
+
+                if word_index in existing_answers:
+                    answer = existing_answers[word_index]
+                    answer.desc = word_text
+                    # Mark as reused
+                    updated_orders.append(word_index)
+                else:
+                    # New answer
+                    answer = ExerciseAnswers(
+                        exercise_id=exercise.id,
+                        block_id=exercise_block.id,
+                        desc=word_text,
+                        order=word_index,
+                        type_id=exercise_type.id,
+                        subject_id=subject.id,
+                        level_id=level.id
+                    )
+                    db.session.add(answer)
+
+            # Delete only unused old answers
+            for order, old_answer in existing_answers.items():
+                if order not in updated_orders:
+                    db.session.delete(old_answer)
+
+        else:  # POST
+            last_block = ExerciseBlock.query.filter(ExerciseBlock.exercise_id == exercise.id).order_by(
+                ExerciseBlock.order.desc()).first()
+            order = last_block.order + 1 if last_block else 1
+            exercise_block = ExerciseBlock(
+                desc=text,
+                exercise_id=exercise.id,
+                component_id=component.id,
+                order=order,
+                clone=editor_state,
+                for_words=words
+            )
+            exercise_block.add_commit()
+
+            for word in words:
+                answer = ExerciseAnswers(
+                    exercise_id=exercise.id,
+                    block_id=exercise_block.id,
+                    desc=word.get('text', [''])[0],
+                    order=word.get('index'),
+                    type_id=exercise_type.id,
+                    subject_id=subject.id,
+                    level_id=level.id
+                )
+                db.session.add(answer)
+
+        db.session.commit()
+        return jsonify(exercise_block.convert_json())
+
+    elif method == "DELETE":
+        exercise_block = ExerciseBlock.query.get(pk)
+        if not exercise_block:
+            return jsonify({"success": False, "msg": "Exercise block not found"}), 404
+
+        answers = ExerciseAnswers.query.filter_by(block_id=pk).all()
+        delete_list_models(answers, File)
+        exercise_block.delete_commit()
+        return del_msg("block", True)
+
+
+@exercise_bp.route('block/question/', defaults={"pk": None}, methods=['POST', 'PUT', 'DELETE'])
+@exercise_bp.route('block/question/<pk>/', methods=['POST', 'PUT', 'DELETE'])
+@jwt_required()
+def block_question(pk):
+    method = request.method
+
+    # === DELETE ===
+    if method == "DELETE":
+        exercise_block = ExerciseBlock.query.get(pk)
+        if not exercise_block:
+            return jsonify({"success": False, "msg": "Exercise block not found"}), 404
+        answers = ExerciseAnswers.query.filter_by(block_id=pk).all()
+        delete_list_models(answers, File)
+        if exercise_block.img_info:
+            check_img_remove(exercise_block.img_info, File=File)
+        exercise_block.delete_commit()
+        return del_msg("block", True)
+
+    # === POST or PUT ===
+    info = request.form.get('info')
+    if not info:
+        return jsonify({"success": False, "msg": "Missing 'info' in request"}), 400
+
+    data = json.loads(info)
+    exc_id = data.get('exc_id')
+    exercise = Exercise.query.get(exc_id)
+    if not exercise:
+        return jsonify({"success": False, "msg": "Exercise not found"}), 404
+
+    text = data.get('text')
+    clone = data.get('clone')
+    inner_type = data.get('innerType')
+    component = Component.query.filter_by(name="question").first()
+    if not component:
+        return jsonify({"success": False, "msg": "Component not found"}), 404
+
+    subject = Subject.query.get(exercise.subject_id)
+    level = SubjectLevel.query.get(exercise.level_id)
+    exercise_type = ExerciseTypes.query.get(exercise.type_id)
+
+    img_info = None
+    if 'img' in request.files:
+        img_info = add_file(request.files['img'], type_file="img", app=current_app, File=File)
+
+    if method == "POST":
+        last_block = ExerciseBlock.query.filter_by(exercise_id=exercise.id).order_by(
+            ExerciseBlock.order.desc()).first()
+        order = last_block.order + 1 if last_block else 1
+        exercise_block = ExerciseBlock(
+            desc=text,
+            exercise_id=exercise.id,
+            component_id=component.id,
+            clone=clone,
+            img_info=img_info,
+            inner_type=inner_type,
+            order=order
+        )
+        exercise_block.add_commit()
+
+    elif method == "PUT":
+        exercise_block = ExerciseBlock.query.get(pk)
+        if not exercise_block:
+            return jsonify({"success": False, "msg": "Exercise block not found"}), 404
+
+        exercise_block.desc = text
+        exercise_block.component_id = component.id
+        exercise_block.inner_type = inner_type
+        exercise_block.clone = clone
+        if img_info:
+            # remove previous block image if new one uploaded
+            if exercise_block.img_info:
+                check_img_remove(exercise_block.img_info, File=File)
+            exercise_block.img_info = img_info
+
+        exercise_block.add_commit()
+    variant_data = data.get('variants', {})
+    variant_type = variant_data.get('type')
+
+    if method == "PUT":
+        old_answers = {a.order: a for a in ExerciseAnswers.query.filter_by(block_id=exercise_block.id).all()}
+        new_indices = {opt.get('index') for opt in variant_data.get('options', [])}
+        for old_index, old_answer in old_answers.items():
+            if old_index not in new_indices:
+                check_img_remove(old_answer.file_id, File=File)
+                db.session.delete(old_answer)
+
+    if variant_type == "select":
+        for option in variant_data.get('options', []):
+            option_text = option.get('text', '')
+            option_index = option.get('index')
+            option_true = option.get('isTrue', False)
+            option_inner_type = option.get('innerType')
+            file_key = f'img-index-{option_index}'
+
+            file_id = None
+            type_img = ''
+
+            if option_inner_type != "text" and file_key in request.files:
+                # New image uploaded — remove old image if any
+                if method == "PUT" and option_index in old_answers and old_answers[option_index].file_id:
+                    check_img_remove(old_answers[option_index].file_id, File=File)
+                file_id = add_file(request.files[file_key], type_file="img", app=current_app, File=File)
+                type_img = "variant_img"
+            elif method == "PUT" and option_index in old_answers:
+                # Reuse old file_id and type_img
+                file_id = old_answers[option_index].file_id
+                type_img = old_answers[option_index].type_img
+
+            if method == "PUT" and option_index in old_answers:
+                # Update existing answer
+                answer = old_answers[option_index]
+                answer.desc = option_text
+                answer.status = option_true
+                answer.file_id = file_id
+                answer.type_img = type_img
+            else:
+                # Create new answer
+                answer = ExerciseAnswers(
+                    exercise_id=exercise.id,
+                    subject_id=subject.id,
+                    level_id=level.id,
+                    desc=option_text,
+                    file_id=file_id,
+                    status=option_true,
+                    type_id=exercise_type.id if exercise_type else None,
+                    order=option_index,
+                    type_img=type_img,
+                    block_id=exercise_block.id
+                )
+                db.session.add(answer)
+
+    elif variant_type == "input":
+        answer_text = variant_data.get('answer', '')
+
+        if method == "PUT":
+            # Delete old answers (assuming only one for input)
+            delete_list_models(ExerciseAnswers.query.filter_by(block_id=exercise_block.id).all(), File=File)
+
+        answer = ExerciseAnswers(
+            exercise_id=exercise.id,
+            subject_id=subject.id,
+            level_id=level.id,
+            desc=answer_text,
+            type_id=exercise_type.id,
+            status=True,
+            type_img='',
+            block_id=exercise_block.id
+        )
+        db.session.add(answer)
+
+    db.session.commit()
+    return jsonify(exercise_block.convert_json())
+
+
+@exercise_bp.route('block/image/', defaults={"pk": None}, methods=['POST', 'PUT', 'DELETE'])
+@exercise_bp.route('block/image/<pk>/', methods=['POST', 'PUT', 'DELETE'])
+@swag_from({"tags": ["Exercise"],
+            "methods": ["POST", "PUT", "DELETE"]})
+def block_image(pk):
+    method = request.method
+    component = Component.query.filter_by(name="image").first()
+    if not component:
+        component = Component(name="image")
+        db.session.add(component)
+    if method in ("POST", "PUT"):
+        info = request.form.get('info')
+        if not info:
+            return jsonify({"success": False, "msg": "Missing 'info' in request"}), 400
+
+        data = json.loads(info)
+        exc_id = data.get('exc_id')
+        exercise = Exercise.query.get(exc_id)
+        if not exercise:
+            return jsonify({"success": False, "msg": "Exercise not found"}), 404
+
+        img_info = None
+        if 'img' in request.files:
+            img_info = add_file(request.files['img'], type_file="img", app=current_app, File=File)
+        if request.method == "PUT":
+            exercise_block = ExerciseBlock.query.get(pk)
+            if not exercise_block:
+                return jsonify({"success": False, "msg": "Exercise block not found"}), 404
+            exercise_block.img_info = img_info
+            exercise_block.add_commit()
+        else:
+            last_block = ExerciseBlock.query.filter(ExerciseBlock.exercise_id == exercise.id).order_by(
+                ExerciseBlock.order.desc()).first()
+            order = last_block.order + 1 if last_block else 1
+            exercise_block = ExerciseBlock(
+                exercise_id=exercise.id,
+                img_info=img_info,
+                order=order,
+                component_id=component.id
+            )
+            exercise_block.add_commit()
+        return jsonify(exercise_block.convert_json())
+    elif method == "DELETE":
+        exercise_block = ExerciseBlock.query.get(pk)
+        if not exercise_block:
+            return jsonify({"success": False, "msg": "Exercise block not found"}), 404
+        exercise_block.delete_commit()
+        return jsonify({"success": True})
+
+
+@exercise_bp.route('block/audio/', defaults={"pk": None}, methods=['POST', 'PUT', 'DELETE'])
+@exercise_bp.route('block/audio/<pk>/', methods=['POST', 'PUT', 'DELETE'])
+@swag_from({"tags": ["Exercise"],
+            "methods": ["POST", "PUT", "DELETE"]})
+def block_audio(pk):
+    method = request.method
+    component = Component.query.filter_by(name="audio").first()
+    if not component:
+        component = Component(name="audio")
+        db.session.add(component)
+    if method in ("POST", "PUT"):
+
+        info = request.form.get('info')
+        if not info:
+            return jsonify({"success": False, "msg": "Missing 'info' in request"}), 400
+
+        data = json.loads(info)
+        exc_id = data.get('exc_id')
+        exercise = Exercise.query.get(exc_id)
+        if not exercise:
+            return jsonify({"success": False, "msg": "Exercise not found"}), 404
+
+        audio_info = None
+        if 'audio' in request.files:
+            audio_info = add_file(request.files['audio'], type_file="audio", app=current_app, File=File)
+        if request.method == "PUT":
+            exercise_block = ExerciseBlock.query.get(pk)
+            if not exercise_block:
+                return jsonify({"success": False, "msg": "Exercise block not found"}), 404
+            exercise_block.audio_info = audio_info
+            exercise_block.add_commit()
+        else:
+            last_block = ExerciseBlock.query.filter(ExerciseBlock.exercise_id == exercise.id).order_by(
+                ExerciseBlock.order.desc()).first()
+            order = last_block.order + 1 if last_block else 1
+            exercise_block = ExerciseBlock(
+                exercise_id=exercise.id,
+                audio_info=audio_info,
+                order=order,
+                component_id=component.id
+            )
+            exercise_block.add_commit()
+        return jsonify(exercise_block.convert_json())
+    elif method == "DELETE":
+        exercise_block = ExerciseBlock.query.get(pk)
+        if not exercise_block:
+            return jsonify({"success": False, "msg": "Exercise block not found"}), 404
+        exercise_block.delete_commit()
+        return jsonify({"success": True})
+
+
+@exercise_bp.route('block/code/', defaults={"pk": None}, methods=['POST', 'PUT', 'DELETE'])
+@exercise_bp.route('block/code/<pk>/', methods=['POST', 'PUT', 'DELETE'])
+@swag_from({"tags": ["Exercise"],
+            "methods": ["POST", "PUT", "DELETE"]})
+def block_code(pk):
+    method = request.method
+
+    if method in ("POST", "PUT"):
+        info = request.get_json()
+
+        if not info:
+            return jsonify({"success": False, "msg": "Missing 'info' in request"}), 400
+
+        exc_id = info.get('exc_id')
+        inner_type = info.get('innerType')
+        text = info.get('text')
+        component = Component.query.filter_by(name=info.get('type')).first()
+        if not component:
+            component = Component(name=info.get('type'))
+            db.session.add(component)
+        exercise = Exercise.query.get(exc_id)
+        if not exercise:
+            return jsonify({"success": False, "msg": "Exercise not found"}), 404
+
+        if request.method == "PUT":
+            exercise_block = ExerciseBlock.query.get(pk)
+            if not exercise_block:
+                return jsonify({"success": False, "msg": "Exercise block not found"}), 404
+            exercise_block.inner_type = inner_type
+            exercise_block.desc = text
+            exercise_block.add_commit()
+        else:
+            last_block = ExerciseBlock.query.filter(ExerciseBlock.exercise_id == exercise.id).order_by(
+                ExerciseBlock.order.desc()).first()
+            order = last_block.order + 1 if last_block else 1
+            exercise_block = ExerciseBlock(
+                exercise_id=exercise.id,
+                inner_type=inner_type,
+                desc=text,
+                order=order,
+                component_id=component.id
+            )
+            exercise_block.add_commit()
+        return jsonify(exercise_block.convert_json())
+    elif method == "DELETE":
+        exercise_block = ExerciseBlock.query.get(pk)
+        if not exercise_block:
+            return jsonify({"success": False, "msg": "Exercise block not found"}), 404
+        exercise_block.delete_commit()
+        return jsonify({"success": True})
+
+
+@exercise_bp.route('block/order/', defaults={"pk": None}, methods=['POST', 'PUT', 'DELETE'])
+@swag_from({"tags": ["Exercise"],
+            "methods": ["POST", "PUT", "DELETE"]})
+def block_order(pk):
+    if request.method == "POST":
+        pprint(request.get_json())

@@ -4,11 +4,17 @@ from backend.models.basic_model import ExerciseTypes
 from backend.basics.settings import create_msg, del_msg, edit_msg
 from flask import Blueprint
 
+from flasgger import swag_from
+
 exercise_type_bp = Blueprint('exercise_type_folder', __name__)
 
 
 @exercise_type_bp.route(f'/crud/', defaults={'pk': None}, methods=['POST', 'PUT', 'GET', 'DELETE'])
 @exercise_type_bp.route(f'/crud/<pk>', methods=['POST', 'PUT', 'GET', 'DELETE'])
+@swag_from({
+    'tags': ['ExerciseType'],
+    "methods": ["POST", "PUT", "GET", "DELETE"],
+})
 def crud(pk):
     if request.method == "POST" or request.method == "PUT":
         name = request.get_json()['name']

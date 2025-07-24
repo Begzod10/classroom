@@ -6,12 +6,17 @@ from backend.models.settings import iterate_models, send_subject_server
 import requests
 from backend.configs import gennis_server_url
 from flask import Blueprint
+from flasgger import swag_from
 
 level_bp = Blueprint('level_folder', __name__)
 
 
 @level_bp.route(f'/info/<int:subject_id>', methods=['POST', 'GET'])
 @jwt_required()
+@swag_from({
+    'tags': ['Subject Levels'],
+    "methods": ["POST", "GET"],
+})
 def info_level(subject_id):
     identity = get_jwt_identity()
     user = User.query.filter(User.classroom_user_id == identity).first()
@@ -53,6 +58,10 @@ def info_level(subject_id):
 
 @level_bp.route(f'/deleted/<int:subject_id>')
 @jwt_required()
+@swag_from({
+    'tags': ['Subject Levels'],
+    "methods": ["GET"],
+})
 def deleted_levels(subject_id):
     subject_levels = SubjectLevel.query.filter(SubjectLevel.subject_id == subject_id,
                                                SubjectLevel.disabled == True).order_by(SubjectLevel.id).all()
@@ -63,6 +72,10 @@ def deleted_levels(subject_id):
 
 @level_bp.route(f'/profile/<int:level_id>')
 @jwt_required()
+@swag_from({
+    'tags': ['Subject Levels'],
+    "methods": ["GET"],
+})
 def profile(level_id):
     level_get = SubjectLevel.query.filter(SubjectLevel.id == level_id).first()
     return jsonify({
@@ -72,6 +85,10 @@ def profile(level_id):
 
 @level_bp.route(f'/crud/<int:level_id>', methods=['POST', 'DELETE'])
 @jwt_required()
+@swag_from({
+    'tags': ['Subject Levels'],
+    "methods": ["POST", "DELETE"],
+})
 def crud(level_id):
     if request.method == "POST":
         get_json = request.get_json()

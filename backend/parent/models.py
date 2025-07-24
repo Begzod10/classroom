@@ -19,12 +19,14 @@ class Parent(db.Model):
                 "id": self.user.location_id,
                 "name": self.user.location.name
             },
+
             'date': str(self.user.born_day) + '.' + str(self.user.born_month) + '.' + str(self.user.born_year),
             "children": [
                 {
                     "id": st.id,
                     "user_id": st.user_id,
                     "name": st.user.name,
+                    "platform_id": st.user.platform_id,
                     "username": st.user.username,
                     "surname": st.user.surname,
                     "balance": st.user.balance,
@@ -33,7 +35,7 @@ class Parent(db.Model):
             ]
         }
 
-    def add(self):
+    def add_commit(self):
         db.session.add(self)
         db.session.commit()
 

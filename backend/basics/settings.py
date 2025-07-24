@@ -1,6 +1,7 @@
 import os
 from werkzeug.utils import secure_filename
 from backend.models.basic_model import User
+from backend.pisa.api.utils import generate_unique_filename
 # from app import *
 
 # from .views import *
@@ -8,9 +9,8 @@ import uuid
 
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
 
-
-gennis_server_url = "http://192.168.1.19:5002"
-# gennis_server_url = os.getenv('GENNIS_SERVER_URL')
+# gennis_server_url = "http://192.168.1.19:5002"
+gennis_server_url = os.getenv('GENNIS_SERVER_URL')
 
 
 def check_file(filename):
@@ -21,55 +21,65 @@ def check_file(filename):
 
 def check_img_remove(img, File):
     img = File.query.filter(File.id == img).first()
-    exist = False
-    if img:
-        if img.subjects or img.exercise_answers or img.lesson_block or img.exercise_block or img.users or img.file_audio or img.file_img:
-            exist = True
-        if not exist:
-            if os.path.isfile("frontend/build" + img.url):
-                os.remove("frontend/build" + img.url)
+    if not img:
+        return
+    has_links = any([
+        img.subjects, img.exercise_answers, img.lesson_block,
+        img.exercise_block, img.users, img.file_audio, img.file_img
+    ])
+    if not has_links:
+        img_path = os.path.join("frontend", "build", img.url)
+        if os.path.isfile(img_path):
+            os.remove(img_path)
 
 
 def save_img(photo, app, type_file=None):
+    basedir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+
     symbols = (u"абвгдеёжзийклмнопрстуфхцчшщъыьэюяАБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ",
                u"abvgdeejzijklmnoprstufhzcss_y_euaABVGDEEJZIJKLMNOPRSTUFHZCSS_Y_EUA")
-
     tr = {ord(a): ord(b) for a, b in zip(*symbols)}
 
-    text = f'{photo.filename}'
-    file_name = text.translate(tr)
-    photo_file = secure_filename(file_name)
-    if type_file == "file":
-        photo_url = file_url() + "/" + photo_file
-        app.config['UPLOAD_FOLDER'] = file_folder()
-        photo.save(os.path.join(app.config['UPLOAD_FOLDER'], photo_file))
-        return (photo_url, file_name)
+    file_name = secure_filename(photo.filename.translate(tr))
+    unique_name = generate_unique_filename(file_name)
+
+    if type_file == "img":
+        upload_folder = os.path.join(basedir, "frontend", "build", "static", "img")
+        photo_url = f"static/img/{unique_name}"
     elif type_file == "audio":
-        photo_url = audio_url() + "/" + photo_file
-        app.config['UPLOAD_FOLDER'] = audio_folder()
-        photo.save(os.path.join(app.config['UPLOAD_FOLDER'], photo_file))
-        return (photo_url, file_name)
-    if not type_file:
-        photo_url = img_url() + "/" + photo_file
-        app.config['UPLOAD_FOLDER'] = img_folder()
-        photo.save(os.path.join(app.config['UPLOAD_FOLDER'], photo_file))
-        return (photo_url, file_name)
-    photo_url = img_url() + "/" + photo_file
-    app.config['UPLOAD_FOLDER'] = img_folder()
-    photo.save(os.path.join(app.config['UPLOAD_FOLDER'], photo_file))
-    return (photo_url, file_name)
+        upload_folder = os.path.join(basedir, "frontend", "build", "static", "audio")
+        photo_url = f"static/audio/{unique_name}"
+    elif type_file == "file":
+        upload_folder = os.path.join(basedir, "frontend", "build", "static", "files")
+        photo_url = f"static/files/{unique_name}"
+    else:
+        raise ValueError("Invalid type_file")
+
+    os.makedirs(upload_folder, exist_ok=True)
+    photo.save(os.path.join(upload_folder, unique_name))
+    return (photo_url, unique_name)
 
 
 def add_file(photo, type_file, app, File):
     photo_url, file_name = save_img(photo, app, type_file=type_file)
-
     mb_size = str(define_size(f'frontend/build/{photo_url}'))
-    print(file_name)
-    img_add = File.query.filter(File.url == photo_url, File.size == mb_size, File.type_file == type_file,
-                                File.file_name == file_name).first()
+
+    img_add = File.query.filter(
+        File.url == photo_url,
+        File.size == mb_size,
+        File.type_file == type_file,
+        File.file_name == file_name
+    ).first()
+
     if not img_add:
-        img_add = File(url=photo_url, size=mb_size, type_file=type_file, file_name=file_name)
+        img_add = File(
+            url=photo_url,
+            size=mb_size,
+            type_file=type_file,
+            file_name=file_name
+        )
         img_add.add()
+
     return img_add.id
 
 

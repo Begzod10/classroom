@@ -83,6 +83,7 @@ class User(db.Model):
     classroom_user_id = Column(String, unique=True)
     education_language = Column(String)
     pisa_student = relationship("PisaStudent", backref="user", order_by="PisaStudent.id")
+    address = Column(String)
 
     def convert_json(self):
         img = None

@@ -7,6 +7,7 @@ from backend.models.settings import User, Subject, Student, send_subject_server,
 import json
 from flask import Blueprint
 from backend.configs import api, gennis_server_url, turon_server_url
+from flasgger import swag_from
 
 subject_bp = Blueprint('subject_folder', __name__)
 
@@ -14,6 +15,26 @@ subject_bp = Blueprint('subject_folder', __name__)
 @subject_bp.route(f"/list/", methods=["GET", "POST"])
 @cross_origin()
 @jwt_required()
+# @swag_from({
+#     'tags': ['Subject'],
+#     'summary': 'Get subjects based on user role',
+#     'responses': {
+#         200: {
+#             'description': 'List of subjects',
+#             'schema': {
+#                 'type': 'object',
+#                 'properties': {
+#                     'subjects': {
+#                         'type': 'array',
+#                         'items': {
+#                             'type': 'object'
+#                         }
+#                     }
+#                 }
+#             }
+#         }
+#     }
+# })
 def subject_list():
     identity = get_jwt_identity()
     user = User.query.filter_by(classroom_user_id=identity).first()
@@ -59,6 +80,10 @@ def subject_list():
 
 @subject_bp.route('/crud/', defaults={'subject_id': None}, methods=['POST'])
 @subject_bp.route('/crud/<subject_id>', methods=['POST'])
+@swag_from({
+    'tags': ['Subject'],
+    "methods": ["POST"],
+})
 def create_subject(subject_id):
     info = request.form.get("info")
     json_file = json.loads(info)
@@ -94,6 +119,10 @@ def create_subject(subject_id):
 
 @subject_bp.route(f'/profile/<int:subject_id>')
 @jwt_required()
+@swag_from({
+    'tags': ['Subject'],
+    "methods": ["GET"],
+})
 def subject(subject_id):
     identity = get_jwt_identity()
     user = User.query.filter(User.classroom_user_id == identity).first()
@@ -111,6 +140,10 @@ def subject(subject_id):
 
 @subject_bp.route(f'/delete/<int:subject_id>', methods=['DELETE'])
 @jwt_required()
+@swag_from({
+    'tags': ['Subject'],
+    "methods": ["DELETE"],
+})
 def del_subject(subject_id):
     identity = get_jwt_identity()
     user = User.query.filter(User.classroom_user_id == identity).first()
@@ -126,6 +159,10 @@ def del_subject(subject_id):
 
 
 @subject_bp.route(f'{api}/classroom_subjects')
+@swag_from({
+    'tags': ['Subject'],
+    "methods": ["GET"],
+})
 def classroom_subjects():
     subjects = Subject.query.order_by(Subject.id).all()
     return jsonify({

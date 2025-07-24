@@ -147,7 +147,6 @@ def check_user_gennis(user_get):
                 teacher.groups.remove(gr)
                 db.session.commit()
     elif user_get['parent']:
-        pprint(user_get['parent']['children'])
         parent = Parent.query.filter(Parent.user_id == user.id).first()
         if not parent:
             parent = Parent(user_id=user.id)

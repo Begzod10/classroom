@@ -5,12 +5,14 @@ from werkzeug.security import generate_password_hash
 from backend.basics.settings import check_exist_id
 from flask import Blueprint
 import pprint
+from flask_jwt_extended import jwt_required, get_jwt_identity
 
 crud_parent_bp = Blueprint('parent_crud', __name__)
 
 
 @crud_parent_bp.route('/crud/', methods=['POST'])
 @crud_parent_bp.route('/crud/<int:id>', methods=['GET', 'POST', 'PUT', 'DELETE'])
+@jwt_required()
 def parent_detail(id=None):
     role = Role.query.filter(Role.type == 'parent').first()
     if not role:
@@ -23,28 +25,28 @@ def parent_detail(id=None):
         if check_username:
             return jsonify({'error': 'Username mavjud'})
 
-        user_add = User(
-            user_id=check_exist_id(),
-            role_id=role.id,
-            username=data.get('username'),
-            password=generate_password_hash('12345678'),
-            name=data.get('name'),
-            surname=data.get('surname'),
-            born_day=data.get('birth_day')[8:10],
-            born_month=data.get('birth_day')[5:7],
-            born_year=data.get('birth_day')[0:4],
-            location_id=data.get('location_id'),
-            father_name=data.get('father_name'),
-            address=data.get('address'),
-        )
-        user_add.add()
+        # user_add = User(
+        #     user_id=check_exist_id(),
+        #     role_id=role.id,
+        #     username=data.get('username'),
+        #     password=generate_password_hash('12345678'),
+        #     name=data.get('name'),
+        #     surname=data.get('surname'),
+        #     born_day=data.get('birth_day')[8:10] if data.get('birth_day') else None,
+        #     born_month=data.get('birth_day')[5:7] if data.get('birth_day') else None,
+        #     born_year=data.get('birth_day')[0:4] if data.get('birth_day') else None,
+        #     location_id=data.get('location_id'),
+        #     father_name=data.get('father_name'),
+        #     address=data.get('address'),
+        # )
+        # user_add.add()
         # phone = PhoneList(
         #     user_id=user_add.id,
         #     phone=data.get('phone')
         # )
         # phone.add()
 
-        new_parent = Parent(user_id=user_add.id)
+        new_parent = Parent(user_id=check_username.id)
         new_parent.add()
         return jsonify(new_parent.convert_json())
 

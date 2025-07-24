@@ -19,10 +19,10 @@ def iterate_models(model, relationship=None, entire=False):
 def delete_list_models(model, File, type=None):
     for subject in model:
         if type:
-            if subject.audio:
-                check_img_remove(subject.audio, File)
-            if subject.img:
-                check_img_remove(subject.img, File)
+            if subject.audio_info:
+                check_img_remove(subject.audio_info, File)
+            if subject.img_info:
+                check_img_remove(subject.img_info, File)
         else:
             if subject.file_id:
                 check_img_remove(subject.file_id, File)

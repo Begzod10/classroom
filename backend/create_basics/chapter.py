@@ -5,12 +5,17 @@ from backend.models.settings import iterate_models
 from flask_jwt_extended import jwt_required, get_jwt_identity
 
 from flask import Blueprint
+from flasgger import swag_from
 
 chapter_bp = Blueprint('chapter_folder', __name__)
 
 
 @chapter_bp.route(f'/info/<level_id>', methods=['POST', "GET"])
 @jwt_required()
+@swag_from({
+    'tags': ['Chapter'],
+    'methods': ['POST', 'GET']
+})
 def chapters_info(level_id):
     identity = get_jwt_identity()
 
@@ -70,7 +75,11 @@ def chapters_info(level_id):
         })
 
 
-@chapter_bp.route(f'/chapters/<level_id>')
+@chapter_bp.route('/chapters/<level_id>', methods=['GET'])
+@swag_from({
+    'tags': ['Chapter'],
+    'methods': ['GET']
+})
 def chapters_only(level_id):
     chapters = Chapter.query.filter(Chapter.level_id == level_id).order_by(Chapter.order).all()
     return jsonify({
@@ -78,7 +87,11 @@ def chapters_only(level_id):
     })
 
 
-@chapter_bp.route(f'/crud/<chapter_id>', methods=['POST', 'DELETE'])
+@chapter_bp.route('/crud/<chapter_id>', methods=['POST', 'DELETE'])
+@swag_from({
+    'tags': ['Chapter'],
+    'methods': ['POST', 'DELETE']
+})
 def crud(chapter_id):
     chapter = Chapter.query.filter(Chapter.id == chapter_id).first()
     chapter_name = chapter.name
@@ -110,7 +123,12 @@ def crud(chapter_id):
             })
 
 
-@chapter_bp.route(f'/change/order', methods=['POST'])
+@chapter_bp.route('/change/order', methods=['POST'])
+@swag_from({
+    'tags': ['Chapter'],
+    "methods": ["POST"],
+
+})
 def change_order():
     type_info = request.get_json()['type']
     chapter = request.get_json()['container']

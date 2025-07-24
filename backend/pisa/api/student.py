@@ -3,46 +3,152 @@ from backend.models.basic_model import db, Pisa, PisaBlockText, PisaBlockTextAns
     PisaStudent, PisaFileType, PisaBlockOptionsStudent, PisaBlockTextAnswerStudent, School, create_school, User, \
     PisaStudent, Role, Location
 import pprint
+from .utils import serialize_block
 from backend.basics.settings import check_exist_classroom_id
 from werkzeug.security import generate_password_hash
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from flask import Blueprint
+from flasgger import swag_from
 
 pisa_student_bp = Blueprint("student", __name__)
 
 
-# @app.route(f'{api}/register_pisa', methods=['GET', 'POST'])
-@pisa_student_bp.route(f'/register', methods=['GET', 'POST'])
+@pisa_student_bp.route('/register', methods=['GET', 'POST'])
+# @swag_from({
+#     'tags': ['Pisa Student'],
+#     'summary': 'Register a new Pisa student or fetch location list',
+#     'description': 'POST to register a student, GET to fetch available locations',
+#     'parameters': [],
+#     'requestBody': {
+#         'required': True,
+#         'content': {
+#             'application/json': {
+#                 'example': {
+#                     'username': 'student123',
+#                     'name': 'Ali',
+#                     'surname': 'Karimov',
+#                     'language': 'uz',
+#                     'location': 2,
+#                     'parentPhone': '+998901234567'
+#                 }
+#             }
+#         }
+#     },
+#     'responses': {
+#         200: {
+#             'description': 'Success response for registration or location list',
+#             'content': {
+#                 'application/json': {
+#                     'examples': {
+#                         'POST Success': {
+#                             'summary': 'Registration success',
+#                             'value': {
+#                                 'success': True,
+#                                 'msg': "Muvaffaqiyatli ro'yxatdan o'tdingiz"
+#                             }
+#                         },
+#                         'GET Success': {
+#                             'summary': 'List of locations',
+#                             'value': [
+#                                 {'id': 1, 'name': 'Tashkent', 'platform_id': 1},
+#                                 {'id': 2, 'name': 'Samarkand', 'platform_id': 2}
+#                             ]
+#                         }
+#                     }
+#                 }
+#             }
+#         },
+#         400: {
+#             'description': 'Bad request or validation error'
+#         }
+#     }
+# })
 def register_pisa():
     create_school()
+
     if request.method == "POST":
+        data = request.get_json()
         classroom_id = check_exist_classroom_id()
-        username = request.get_json()['username']
-        name = request.get_json()['name']
-        surname = request.get_json()['surname']
-        language = request.get_json()['language']
-        location = request.get_json()['location']
-        parentPhone = request.get_json()['parentPhone']
+        username = data['username']
+        name = data['name']
+        surname = data['surname']
+        language = data['language']
+        location = data['location']
+        parentPhone = data['parentPhone']
 
         role = Role.query.filter(Role.type == "student_test", Role.role == "a52v23q13").first()
         if not role:
             role = Role(type="student_test", role="a52v23q13")
             role.add_commit()
-        add_user = User(username=username, name=name, surname=surname, balance=0, system_name="pisa",
-                        parent_phone=parentPhone, password=generate_password_hash("12345678"),
-                        role_id=role.id, location_id=location,
-                        classroom_user_id=classroom_id, education_language=language)
+
+        add_user = User(
+            username=username,
+            name=name,
+            surname=surname,
+            balance=0,
+            system_name="pisa",
+            parent_phone=parentPhone,
+            password=generate_password_hash("12345678"),
+            role_id=role.id,
+            location_id=location,
+            classroom_user_id=classroom_id,
+            education_language=language
+        )
         add_user.add_commit()
+
         add_student = PisaStudent(user_id=add_user.id)
         add_student.add()
+
         return jsonify({"success": True, "msg": "Muvaffaqiyatli ro'yxatdan o'tdingiz"}), 200
 
     locations = Location.query.order_by(Location.platform_id).all()
     return jsonify([location.convert_json() for location in locations])
 
 
-# @app.route(f'{api}/check_username_pisa', methods=['POST'])
-@pisa_student_bp.route(f'/check/username', methods=['POST'])
+from flasgger import swag_from
+
+
+@pisa_student_bp.route('/check/username', methods=['POST'])
+# @swag_from({
+#     'tags': ['Pisa Student'],
+#     'summary': 'Check if a Pisa username exists',
+#     'description': 'Checks whether a user with the given username already exists in the Pisa system.',
+#     'requestBody': {
+#         'required': True,
+#         'content': {
+#             'application/json': {
+#                 'example': {
+#                     'username': 'student123'
+#                 }
+#             }
+#         }
+#     },
+#     'responses': {
+#         200: {
+#             'description': 'Username check result',
+#             'content': {
+#                 'application/json': {
+#                     'examples': {
+#                         'Exists': {
+#                             'summary': 'User already exists',
+#                             'value': {
+#                                 'success': False,
+#                                 'msg': "Bunday foydalanuvchi mavjud"
+#                             }
+#                         },
+#                         'Not Exists': {
+#                             'summary': 'User does not exist',
+#                             'value': {
+#                                 'success': True,
+#                                 'msg': "Bunday foydalanuvchi mavjud emas"
+#                             }
+#                         }
+#                     }
+#                 }
+#             }
+#         }
+#     }
+# })
 def check_username_pisa():
     username = request.get_json()['username']
     user = User.query.filter(User.username == username, User.system_name == "pisa").first()
@@ -51,9 +157,40 @@ def check_username_pisa():
     return jsonify({"success": True, "msg": "Bunday foydalanuvchi mavjud emas"}), 200
 
 
-# @app.route(f'{api}/get_pisa_list')
-@pisa_student_bp.route(f'/get/list')
+@pisa_student_bp.route('/get/list')
 @jwt_required()
+# @swag_from({
+#     'tags': ['Pisa Student'],
+#     'summary': 'Get available Pisa test list',
+#     'description': 'Returns a list of Pisa tests available to the logged-in student, including test completion status.',
+#     'security': [{'BearerAuth': []}],
+#     'responses': {
+#         200: {
+#             'description': 'List of Pisa tests',
+#             'content': {
+#                 'application/json': {
+#                     'example': [
+#                         {
+#                             "id": 1,
+#                             "name": "PISA 2025 Test A",
+#                             "total_questions": 15,
+#                             "finished": False
+#                         },
+#                         {
+#                             "id": 2,
+#                             "name": "PISA 2025 Test B",
+#                             "total_questions": 20,
+#                             "finished": True
+#                         }
+#                     ]
+#                 }
+#             }
+#         },
+#         401: {
+#             'description': 'Missing or invalid JWT token'
+#         }
+#     }
+# })
 def get_pisa_list():
     user = User.query.filter(User.classroom_user_id == get_jwt_identity()).first()
     pisa_student = PisaStudent.query.filter(PisaStudent.user_id == user.id).first()
@@ -61,183 +198,159 @@ def get_pisa_list():
     pisa_tests = Pisa.query.filter(Pisa.status == True, Pisa.deleted == False).all()
     pisa_list = []
     for pisa in pisa_tests:
-        pisa_test = PisaTest.query.filter(PisaTest.pisa_id == pisa.id,
-                                          PisaTest.student_id == pisa_student.id).first() if pisa_student else None
+        pisa_test = PisaTest.query.filter(
+            PisaTest.pisa_id == pisa.id,
+            PisaTest.student_id == pisa_student.id
+        ).first() if pisa_student else None
 
         info = {
             "id": pisa.id,
             "name": pisa.name,
             "total_questions": pisa.total_questions,
-            "finished": True if pisa_test and pisa_test.finished else False
+            "finished": bool(pisa_test and pisa_test.finished)
         }
         pisa_list.append(info)
     return jsonify(pisa_list)
 
 
-# @app.route(f'{api}/get_pisa_test/<pk>')
 @pisa_student_bp.route(f'/get/test/<pk>')
+# @swag_from({
+#     'tags': ['PISA Tests'],
+#     'parameters': [
+#         {
+#             'name': 'pk',
+#             'in': 'path',
+#             'required': True,
+#             'type': 'integer',
+#             'description': 'PISA Test ID'
+#         },
+#         {
+#             'name': 'Authorization',
+#             'in': 'header',
+#             'type': 'string',
+#             'required': True,
+#             'description': 'JWT access token. Format: Bearer {token}'
+#         }
+#     ],
+#     'responses': {
+#         200: {
+#             'description': 'PISA test data or message if already completed',
+#             'examples': {
+#                 'application/json': {
+#                     "pisa_id": 1,
+#                     "name": "Math PISA",
+#                     "status": True,
+#                     "pisa_test_id": 10,
+#                     "pisa_blocks_left": [
+#                         {"id": 1, "index": 0, "content": "..."}
+#                     ],
+#                     "pisa_blocks_right": [
+#                         {"id": 2, "index": 0, "content": "..."}
+#                     ]
+#                 }
+#             }
+#         },
+#         404: {
+#             'description': 'PISA Test or User not found'
+#         }
+#     },
+#     'description': """
+# Returns detailed PISA test blocks and student progress.
+#
+# - Verifies if the test is already completed by the student
+# - Returns both left and right side blocks for the PISA test
+# """
+# })
 @jwt_required()
 def get_pisa_test(pk):
-    pisa_test = Pisa.query.filter(Pisa.id == pk).first()
-    user = User.query.filter(User.classroom_user_id == get_jwt_identity()).first()
-    pisa_student = PisaStudent.query.filter(PisaStudent.user_id == user.id).first()
-    pisa_test_student = PisaTest.query.filter(PisaTest.pisa_id == pk,
-                                              PisaTest.student_id == pisa_student.id).first() if pisa_student else None
+    pisa_test = Pisa.query.filter_by(id=pk).first_or_404()
+    user = User.query.filter_by(classroom_user_id=get_jwt_identity()).first_or_404()
+    pisa_student = PisaStudent.query.filter_by(user_id=user.id).first()
+    pisa_test_student = PisaTest.query.filter_by(pisa_id=pk,
+                                                 student_id=pisa_student.id).first() if pisa_student else None
+
     if pisa_test_student and pisa_test_student.finished:
-        return jsonify({"success": False, "msg": "Pisa test bajarilib bolingan!"}), 200
-    pisa_blocks_left = PisaBlockText.query.filter(PisaBlockText.pisa_id == pisa_test.id,
-                                                  PisaBlockText.position == 'left').order_by(
+        return jsonify({"success": False, "msg": "Pisa test bajarilib bo‘lgan!"}), 200
+
+    blocks_left = PisaBlockText.query.filter_by(pisa_id=pisa_test.id, position='left').order_by(
         PisaBlockText.index).all()
-    pisa_blocks_right = PisaBlockText.query.filter(PisaBlockText.pisa_id == pisa_test.id,
-                                                   PisaBlockText.position == 'right').order_by(
+    blocks_right = PisaBlockText.query.filter_by(pisa_id=pisa_test.id, position='right').order_by(
         PisaBlockText.index).all()
-    info = {
+
+    return jsonify({
         'pisa_id': pisa_test.id,
         'name': pisa_test.name,
         'status': pisa_test.status,
-        'pisa_blocks_left': [],
-        'pisa_blocks_right': [],
-        'pisa_test_id': pisa_test_student.id if pisa_test_student else None
-    }
-    for pisa_block in pisa_blocks_left:
-        block_text_answers = PisaBlockTextAnswer.query.filter_by(pisa_block_id=pisa_block.id).order_by(
-            PisaBlockTextAnswer.index).all()
-        block_text_options = PisaBlockQuestionOptions.query.filter_by(pisa_block_id=pisa_block.id).order_by(
-            PisaBlockQuestionOptions.index).all()
-        info_left = {
-            'id': pisa_block.id,
-            'pisa_id': pisa_block.pisa_id,
-            'text': pisa_block.text,
-            'position': pisa_block.position,
-            'index': pisa_block.index,
-            'type': pisa_block.type_block,
-            'completed': pisa_block.completed,
-            'words': pisa_block.words,
-            'editorState': pisa_block.editorState,
-            'typeVariants': pisa_block.typeVariants,
-            'type_question': pisa_block.type_question,
-            'image_url': pisa_block.file.url if pisa_block.file else None,
-            'innerType': pisa_block.innerType,
-            'video_url': pisa_block.video_url,
-            'answers': [],
-            'options': []
-        }
-        for answer in block_text_answers:
-            student_block = {}
-            if pisa_test_student:
-                student_answer = PisaBlockTextAnswerStudent.query.filter(
-                    PisaBlockTextAnswerStudent.pisa_test_id == pisa_test_student.id,
-                    PisaBlockTextAnswerStudent.student_id == pisa_student.id,
-                    PisaBlockTextAnswerStudent.text_answer_id == answer.id,
-                    PisaBlockTextAnswerStudent.pisa_block_text_id == pisa_block.id).first()
-                student_block = student_answer.convert_json() if student_answer else None
-            info_test = {
-                'id': answer.id,
-                'pisa_block_id': answer.pisa_block_id,
-                'text': answer.text,
-                'statusWord': answer.statusWord,
-                'type': answer.type,
-                'wrapped': answer.wrapped,
-                'index': answer.index,
-                "student_block": student_block
-            }
-            info_left['answers'].append(info_test)
-        for option in block_text_options:
-            student_block = {}
-            if pisa_test_student:
-                student_option = PisaBlockOptionsStudent.query.filter(
-                    PisaBlockOptionsStudent.pisa_test_id == pisa_test_student.id,
-                    PisaBlockOptionsStudent.student_id == pisa_student.id,
-                    PisaBlockOptionsStudent.pisa_block_question_options_id == option.id,
-                    PisaBlockOptionsStudent.pisa_block_text_id == pisa_block.id).first()
-                student_block = student_option.convert_json() if student_option else None
-            info_test = {
-                "id": option.id,
-                "pisa_block_id": option.pisa_block_id,
-                "file_id": option.file_id,
-                "index": option.index,
-                "image_url": option.file.url if option.file else None,
-                "innerType": option.innerType,
-                "isTrue": option.isTrue,
-                "text": option.text,
-                "answer": option.answer,
-                "student_block": student_block
-            }
-            info_left['options'].append(info_test)
-        info['pisa_blocks_left'].append(info_left)
-    for pisa_block in pisa_blocks_right:
-        block_text_answers = PisaBlockTextAnswer.query.filter_by(pisa_block_id=pisa_block.id).order_by(
-            PisaBlockTextAnswer.index).all()
-        block_text_options = PisaBlockQuestionOptions.query.filter_by(pisa_block_id=pisa_block.id).order_by(
-            PisaBlockQuestionOptions.index).all()
-        info_right = {
-            'id': pisa_block.id,
-            'pisa_id': pisa_block.pisa_id,
-            'text': pisa_block.text,
-            'position': pisa_block.position,
-            'index': pisa_block.index,
-            'type': pisa_block.type_block,
-            'completed': pisa_block.completed,
-            'words': pisa_block.words,
-            'image_url': pisa_block.file.url if pisa_block.file else None,
-            'innerType': pisa_block.innerType,
-            'editorState': pisa_block.editorState,
-            'typeVariants': pisa_block.typeVariants,
-            'type_question': pisa_block.type_question,
-            'video_url': pisa_block.video_url,
-            'answers': [],
-            'options': []
-        }
-        for answer in block_text_answers:
-            student_block = {}
-            if pisa_test_student:
-                student_answer = PisaBlockTextAnswerStudent.query.filter(
-                    PisaBlockTextAnswerStudent.pisa_test_id == pisa_test_student.id,
-                    PisaBlockTextAnswerStudent.student_id == pisa_student.id,
-                    PisaBlockTextAnswerStudent.text_answer_id == answer.id,
-                    PisaBlockTextAnswerStudent.pisa_block_text_id == pisa_block.id).first()
-                student_block = student_answer.convert_json() if student_answer else None
-            info_test = {
-                'id': answer.id,
-                'pisa_block_id': answer.pisa_block_id,
-                'text': answer.text,
-                'statusWord': answer.statusWord,
-                'type': answer.type,
-                'wrapped': answer.wrapped,
-                'index': answer.index,
-                "student_block": student_block
-            }
-            info_right['answers'].append(info_test)
-        for option in block_text_options:
-            student_block = {}
-            if pisa_test_student:
-                student_option = PisaBlockOptionsStudent.query.filter(
-                    PisaBlockOptionsStudent.pisa_test_id == pisa_test_student.id,
-                    PisaBlockOptionsStudent.student_id == pisa_student.id,
-                    PisaBlockOptionsStudent.pisa_block_question_options_id == option.id,
-                    PisaBlockOptionsStudent.pisa_block_text_id == pisa_block.id).first()
-                student_block = student_option.convert_json() if student_option else None
-            info_test = {
-                "id": option.id,
-                "pisa_block_id": option.pisa_block_id,
-                "file_id": option.file_id,
-                "index": option.index,
-                "image_url": option.file.url if option.file else None,
-                "innerType": option.innerType,
-                "isTrue": option.isTrue,
-                "text": option.text,
-                "answer": option.answer,
-                "student_block": student_block
-            }
-            info_right['options'].append(info_test)
-        info['pisa_blocks_right'].append(info_right)
-
-    return jsonify(info)
+        'pisa_test_id': pisa_test_student.id if pisa_test_student else None,
+        'pisa_blocks_left': [serialize_block(b, pisa_test_student, pisa_student) for b in blocks_left],
+        'pisa_blocks_right': [serialize_block(b, pisa_test_student, pisa_student) for b in blocks_right]
+    })
 
 
-# @app.route(f'{api}/complete_pisa_test/<pk>', methods=['POST'])
 @pisa_student_bp.route(f'/complete/pisa/test/<pk>', methods=['POST'])
 @jwt_required()
+# @swag_from({
+#     'tags': ['Pisa'],
+#     'summary': 'Submit answers for a Pisa test block',
+#     'parameters': [
+#         {
+#             'name': 'pk',
+#             'in': 'path',
+#             'required': True,
+#             'description': 'Pisa test ID',
+#             'type': 'integer'
+#         },
+#         {
+#             'name': 'body',
+#             'in': 'body',
+#             'required': True,
+#             'schema': {
+#                 'type': 'object',
+#                 'properties': {
+#                     'block_id': {'type': 'integer'},
+#                     'type': {'type': 'string', 'enum': ['select', 'input']},
+#                     'answer': {
+#                         'type': 'object',
+#                         'properties': {
+#                             'id': {'type': 'integer'},
+#                             'value': {'type': 'string'},
+#                             'valueId': {'type': 'integer'}
+#                         }
+#                     },
+#                     'answers': {
+#                         'type': 'array',
+#                         'items': {
+#                             'type': 'object',
+#                             'properties': {
+#                                 'id': {'type': 'integer'},
+#                                 'type': {'type': 'string', 'enum': ['input', 'select']},
+#                                 'value': {'type': 'string'},
+#                                 'valueId': {'type': 'integer'}
+#                             }
+#                         }
+#                     }
+#                 },
+#                 'example': {
+#                     "block_id": 1,
+#                     "type": "input",
+#                     "answer": {"id": 3, "value": "Answer"}
+#                 }
+#             }
+#         }
+#     ],
+#     'responses': {
+#         200: {
+#             'description': 'Submission result',
+#             'examples': {
+#                 'application/json': {
+#                     "success": True,
+#                     "msg": "Muvaffaqiyatli yakunlandi",
+#                     "student_pisa_id": 123
+#                 }
+#             }
+#         }
+#     }
+# })
 def complete_pisa_test(pk):
     user = User.query.filter(User.classroom_user_id == get_jwt_identity()).first()
     pisa_student = PisaStudent.query.filter_by(user_id=user.id).first()
@@ -376,7 +489,6 @@ def complete_pisa_test(pk):
     return jsonify({"success": True, "msg": "Muvaffaqiyatli yakunlandi", "student_pisa_id": pisa_test_exist.id}), 200
 
 
-# @app.route(f'{api}/show_results/<pisa_test_id>', methods=['GET'])
 @pisa_student_bp.route(f'/show/result/<pisa_test_id>', methods=['GET'])
 @jwt_required()
 def show_results(pisa_test_id):

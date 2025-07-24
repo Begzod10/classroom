@@ -17,9 +17,8 @@ from backend.extentions import db, migrate, jwt, api, cors, admin
 from backend.pisa.api.views import register_pisa_views
 
 from backend.create_basics.views import register_create_basics
-
+from flasgger import Swagger
 from backend.parent.views import register_parent_views
-
 
 load_dotenv()
 
@@ -27,43 +26,37 @@ load_dotenv()
 def create_app():
     app = Flask(
         __name__,
-        static_folder="frontend/build",  # React build
-        static_url_path="/"  # Serve React from root
+        static_folder="frontend/build",
+        static_url_path="/"
     )
+
     app.config.from_object('backend.models.config')
+
+    app.config['SWAGGER'] = {
+        'uiversion': 3,
+        'parse': False,
+        'exclude_methods': []
+    }
+
     db.init_app(app)
     migrate.init_app(app, db)
     jwt.init_app(app)
-    # api.init_app(app)
     cors.init_app(app, resources={r"/api/*": {"origins": "*"}})
     admin.init_app(app)
-    app.config.from_mapping(
-        CELERY=dict(
-            broker_url=os.getenv('CELERY_BROKER_URL', 'redis://localhost:6379/2'),
-            result_backend=os.getenv('CELERY_RESULT_BACKEND', 'redis://localhost:6379/2'),
-            task_ignore_result=True,
-        ),
-    )
-    api = '/api'
-    register_pisa_views(api, app)
 
-    register_create_basics(api, app)
+    Swagger(app, parse=False)
 
-    register_parent_views(api, app)
+    api_prefix = '/api'
+    register_pisa_views(api_prefix, app)
+    register_create_basics(api_prefix, app)
+    register_parent_views(api_prefix, app)
 
-    # register_commands(app)
-    # register_teacher_views(app)
     return app
 
 
 app = create_app()
 
-
 api = '/api'
-
-
-
-
 
 # basics
 from backend.basics.views import *

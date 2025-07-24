@@ -1,0 +1,44 @@
+swagger: "2.0"
+info:
+  title: Pisa API
+  description: List Pisa tests by deleted status
+  version: "1.0.0"
+
+basePath: /
+schemes:
+  - http
+
+paths:
+  /list/{deleted}:
+    get:
+      tags:
+        - Pisa
+      summary: Get Pisa tests
+      description: Returns Pisa tests filtered by deletion status
+      parameters:
+        - name: deleted
+          in: path
+          required: true
+          type: string
+          enum: [true, false]
+          description: "Whether to return deleted Pisa tests or not"
+      responses:
+        200:
+          description: A list of Pisa tests
+          schema:
+            type: array
+            items:
+              type: object
+              properties:
+                id:
+                  type: integer
+                  example: 1
+                name:
+                  type: string
+                  example: Sample Test
+                status:
+                  type: boolean
+                  example: false
+                deleted:
+                  type: boolean
+                  example: false

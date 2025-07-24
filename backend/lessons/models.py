@@ -440,138 +440,28 @@ class Exercise(db.Model):
         db.session.commit()
 
     def convert_json(self, entire=False):
-        if entire:
-            info = {
-                "id": self.id,
-                "name": self.name,
-                "subject": {
-                    "id": self.subject.id,
-                    "name": self.subject.name
-                },
-                "type": {
-                    "id": self.exercise_types.id,
-                    "name": self.exercise_types.name,
-                    "type": self.exercise_types.type_exercise
-
-                },
-                "level": {
-                    "id": self.subject_level.id,
-                    "name": self.subject_level.name
-                },
-                "block": [],
-                "random": self.random_status
-            }
-            if self.random_status:
-                exercise_blocks = ExerciseBlock.query.filter(ExerciseBlock.exercise_id == self.id).order_by(
-                    func.random()).all()
-                for block in exercise_blocks:
-                    info_block = {
-                        "id": block.id,
-                        "desc": block.desc,
-                        "clone": block.clone,
-                        "type": block.component.name,
-                        "img": None,
-                        "audio": block.audio.url if block.audio else "",
-                        "answers": [],
-                        "innerType": block.inner_type,
-                        "words_img": [],
-                        "words_clone": block.for_words,
-
-                    }
-                    block_images = ExerciseBlockImages.query.filter(
-                        ExerciseBlockImages.block_id == block.id).order_by(ExerciseBlockImages.id).all()
-                    for img in block_images:
-                        info_img = {
-                            "id": img.file.id,
-                            "img": img.file.url,
-                            "order": img.order,
-                            "type": img.type_image
-                        }
-                        info_block['words_img'].append(info_img)
-                    if block.img:
-                        info_block['img'] = block.img.url
-                    info['block'].append(info_block)
-                    for answers in block.exercise_answers:
-                        img = None
-                        if answers.file:
-                            img = answers.file.url
-                        info_answer = {
-                            "id": answers.id,
-                            "desc": answers.desc,
-                            "order": answers.order,
-                            "img": img,
-                            "block_id": answers.block_id,
-                            "type_img": answers.type_img,
-                            # "status": False
-                        }
-                        if answers.file:
-                            info_answer['img'] = answers.file.url
-                        info_block['answers'].append(info_answer)
-            else:
-                for block in self.block:
-                    info_block = {
-                        "id": block.id,
-                        "desc": block.desc,
-                        "clone": block.clone,
-                        "type": block.component.name,
-                        "img": None,
-                        "audio": block.audio.url if block.audio else "",
-                        "answers": [],
-                        "innerType": block.inner_type,
-                        "words_img": [],
-                        "words_clone": block.for_words,
-
-                    }
-                    block_images = ExerciseBlockImages.query.filter(
-                        ExerciseBlockImages.block_id == block.id).order_by(ExerciseBlockImages.id).all()
-                    for img in block_images:
-                        info_img = {
-                            "id": img.file.id,
-                            "img": img.file.url,
-                            "order": img.order,
-                            "type": img.type_image
-                        }
-                        info_block['words_img'].append(info_img)
-                    if block.img:
-                        info_block['img'] = block.img.url
-                    info['block'].append(info_block)
-                    for answers in block.exercise_answers:
-                        img = None
-                        if answers.file:
-                            img = answers.file.url
-                        info_answer = {
-                            "id": answers.id,
-                            "desc": answers.desc,
-                            "order": answers.order,
-                            "img": img,
-                            "block_id": answers.block_id,
-                            "type_img": answers.type_img,
-                            # "status": False
-                        }
-                        if answers.file:
-                            info_answer['img'] = answers.file.url
-                        info_block['answers'].append(info_answer)
-            return info
-        return {
+        info = {
             "id": self.id,
             "name": self.name,
             "subject": {
-                "id": self.subject.id,
-                "name": self.subject.name
+                "id": self.subject.id if self.subject else None,
+                "name": self.subject.name if self.subject else None
             },
             "type": {
-                "id": self.exercise_types.id,
-                "name": self.exercise_types.name
+                "id": self.exercise_types.id if self.exercise_types else None,
+                "name": self.exercise_types.name if self.exercise_types else None,
+                "type": self.exercise_types.type_exercise if self.exercise_types else None
 
             },
             "level": {
-                "id": self.subject_level.id,
-                "name": self.subject_level.name
+                "id": self.subject_level.id if self.subject_level else None,
+                "name": self.subject_level.name if self.subject_level else None
             },
             "random": self.random_status,
-            "block": [],
-
+            "blocks": [block.convert_json() for block in self.block]
         }
+
+        return info
 
     def delete_commit(self):
         db.session.delete(self)
@@ -595,6 +485,19 @@ class ExerciseBlock(db.Model):
     inner_type = Column(String)
     order = Column(Integer)
     for_words = Column(JSON())
+
+    def convert_json(self, entire=False):
+        return {
+            "id": self.id,
+            "desc": self.desc,
+            "clone": self.clone,
+            "type": self.component.name if self.component else None,
+            "img": self.img.url if self.img else "",
+            "audio": self.audio.url if self.audio else "",
+            "answers": [answer.convert_json() for answer in self.exercise_answers],
+            "innerType": self.inner_type,
+            "words_clone": self.for_words
+        }
 
     def add_commit(self):
         db.session.add(self)
@@ -629,9 +532,11 @@ class ExerciseAnswers(db.Model):
     def convert_json(self):
         return {
             "id": self.id,
-            "name": self.name,
-            "img": self.file.url,
-            "desc": self.desc
+            "img": self.file.url if self.file else None,
+            "desc": self.desc,
+            "status": self.status,
+            "type_img": self.type_img,
+            "order": self.order
         }
 
     def add_commit(self):

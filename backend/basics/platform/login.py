@@ -1,5 +1,5 @@
-from app import  app, request, jsonify, db, jwt_required, get_jwt_identity
-from backend.models.basic_model import User, Student, Role, Subject, Teacher, StudentSubject
+from app import app, request, jsonify, db, jwt_required, get_jwt_identity
+from backend.models.basic_model import User, Location
 from backend.basics.settings import create_msg, edit_msg, del_msg
 import requests
 from pprint import pprint
@@ -8,6 +8,7 @@ from .utils import check_group_info, check_user_gennis, check_user_turon, check_
 from flask_jwt_extended import create_access_token, create_refresh_token
 from werkzeug.security import generate_password_hash, check_password_hash
 from backend.configs import api, gennis_server_url, turon_server_url
+
 
 @app.route(f'{api}/login', methods=['POST'])
 def login():
@@ -25,12 +26,19 @@ def login():
                 "password": password,
             })
             user_get = response.json()['user'] if 'user' in response.json() else {}
-            print('sdvsd')
+            location = response.json()['location']
+            exist_location = Location.query.filter(Location.platform_id == location['value']).first()
+            if not exist_location:
+                exist_location = Location(name=location['name'], platform_id=location['value'])
+                exist_location.add_commit()
             if not user_get:
                 return {"msg": "Username yoki parol noto'g'ri", "success": False}, 200
             if not user:
                 user = check_user_gennis(user_get)
+            user.location_id = exist_location.id
+            db.session.commit()
             if user_get['parent']:
+                pprint(user_get)
                 check_user_gennis(user_get)
         else:
             response = requests.post(f"{turon_server_url}/api/token/", headers={
@@ -70,7 +78,7 @@ def login():
             })
         else:
             return {"msg": "Username yoki parol noto'g'ri", "success": False}, 200
-
+    # print(user.parent.student_get)
     return jsonify({
         "data": {
             "info": user.convert_json(),

@@ -9,11 +9,17 @@ import json
 from sqlalchemy import desc as teskari
 from flask import Blueprint
 
+from flasgger import swag_from
+
 lesson_bp = Blueprint('lesson_folder', __name__)
 
 
 @lesson_bp.route(f'/filter_exercise/<subject_id>/<level_id>')
 @jwt_required()
+@swag_from({
+    'tags': ['Lesson'],
+    "methods": ["GET"],
+})
 def filter_exercise(subject_id, level_id):
     exercises = Exercise.query.filter(Exercise.subject_id == subject_id, Exercise.level_id == level_id).order_by(
         Exercise.id).all()
@@ -25,6 +31,10 @@ def filter_exercise(subject_id, level_id):
 
 @lesson_bp.route(f'/info/<int:level_id>', methods=["GET", 'POST'])
 @jwt_required()
+@swag_from({
+    'tags': ['Lesson'],
+    "methods": ["GET", "POST"],
+})
 def info(level_id):
     identity = get_jwt_identity()
     user = User.query.filter_by(user_id=identity).first()
@@ -110,6 +120,10 @@ def info(level_id):
 
 @lesson_bp.route(f'/profile/<chapter_id>/<order>', methods=['POST', 'GET', 'DELETE'])
 @jwt_required()
+@swag_from({
+    'tags': ['Lesson'],
+    'methods': ['POST', 'GET', 'DELETE']
+})
 def profile(chapter_id, order):
     identity = get_jwt_identity()
     user = User.query.filter(User.classroom_user_id == identity).first()
@@ -254,6 +268,10 @@ def profile(chapter_id, order):
 
 @lesson_bp.route(f'/delete/block/<int:block_id>', methods=['DELETE'])
 @jwt_required()
+@swag_from({
+    'tags': ['Lesson'],
+    "methods": ["DELETE"],
+})
 def del_lesson_block(block_id):
     lesson_block = LessonBlock.query.filter(LessonBlock.id == block_id).first()
     if lesson_block.file_id:
