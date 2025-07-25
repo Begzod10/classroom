@@ -1,6 +1,7 @@
-from app import api, app, request, jsonify, db, jwt_required, gennis_server_url, get_jwt_identity, turon_server_url
+from app import api, app, request, jsonify, db, jwt_required, get_jwt_identity
 from backend.models.basic_model import Teacher, User, Group
 import requests
+from backend.configs import turon_server_url, gennis_server_url
 
 
 @app.route(f'{api}/attendance_classroom/<group_id>')

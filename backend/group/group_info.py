@@ -1,11 +1,12 @@
-from app import app, api, cross_origin, db, contains_eager, request, or_, jsonify, gennis_server_url, turon_server_url
+from app import app, api, cross_origin, db, contains_eager, request, or_, jsonify
+from backend.configs import gennis_server_url
 from backend.models.basic_model import Student, StudentLevel, Teacher, Group, SubjectLevel, User, StudentSubject, \
     Location, Role, Subject, Chapter, StudentChapter, StudentLesson
 from flask_jwt_extended import get_jwt_identity, jwt_required
 from backend.models.settings import iterate_models, check_exist_id
 from pprint import pprint
 import requests
-from backend.basics.views import check_group_info
+from backend.basics.utils import check_group_info
 import uuid
 from sqlalchemy.exc import IntegrityError, PendingRollbackError
 import hashlib

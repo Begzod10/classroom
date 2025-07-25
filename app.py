@@ -20,6 +20,8 @@ from backend.create_basics.views import register_create_basics
 from flasgger import Swagger
 from backend.parent.views import register_parent_views
 from backend.mobile.parent.urls import register_mobile_parent_views
+from backend.basics.views import register_views
+from backend.student.views import register_student_routes
 
 load_dotenv()
 
@@ -48,6 +50,8 @@ def create_app():
     Swagger(app, parse=False)
 
     api_prefix = '/api'
+
+    register_views(api_prefix, app)
     register_pisa_views(api_prefix, app)
     register_create_basics(api_prefix, app)
     register_parent_views(api_prefix, app)
@@ -71,11 +75,6 @@ app = create_app()
 
 api = '/api'
 
-# basics
-from backend.basics.views import *
-# create basics
-from backend.create_basics.views import *
-
 # group
 from backend.group.views import *
 
@@ -93,9 +92,6 @@ from backend.class_test.views import *
 
 # mobile
 from backend.mobile.views import *
-
-# pisa
-# from backend.pisa.api.views import *
 
 from backend.models.views import *
 

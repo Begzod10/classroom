@@ -9,9 +9,13 @@ from backend.models.settings import iterate_models
 from pprint import pprint
 from .utils import update_student_datas, update_ratings
 from sqlalchemy import or_
+from flask import Blueprint
+from flasgger import swag_from
+
+student_lesson_bp = Blueprint('student_lesson', __name__)
 
 
-@app.route(f'{api}/finish/lesson/<int:lesson_id>')
+@student_lesson_bp.route(f'/lesson/<int:lesson_id>/')
 @jwt_required()
 def finish_lesson(lesson_id):
     identity = get_jwt_identity()
@@ -25,7 +29,7 @@ def finish_lesson(lesson_id):
     })
 
 
-@app.route(f'{api}/complete_exercise', methods=['POST'])
+@student_lesson_bp.route(f'/complete/', methods=['POST'])
 @jwt_required()
 def complete_exercise():
     identity = get_jwt_identity()
@@ -190,19 +194,6 @@ def complete_exercise():
                                                                StudentExerciseBlock.exercise_id == exercise_id,
                                                                StudentExerciseBlock.student_lesson_archive_id == student_lesson_archive.id).order_by(
         StudentExerciseBlock.id).all()
-
-    # exercise_block = ExerciseBlock.query.filter(
-    #     ExerciseBlock.exercise_id.in_([exe.id for exe in lesson.exercises]),
-    #     or_(ExerciseBlock.inner_type == "text", ExerciseBlock.inner_type == "words",
-    #         ExerciseBlock.inner_type == "matchWord", ExerciseBlock.inner_type == "matchWords")).count()
-    # finished_blocks = StudentExerciseBlock.query.filter(StudentExerciseBlock.lesson_id == lesson_id,
-    #                                                     StudentExerciseBlock.student_id == student.id,
-    #                                                     StudentExerciseBlock.exercise_id.in_(
-    #                                                         [exe.id for exe in lesson.exercises]),
-    #                                                     StudentExerciseBlock.student_lesson_archive_id == student_lesson_archive.id).order_by(
-    #     StudentExerciseBlock.id).count()
-    # print('exe', exercise_block)
-    # print('finished', finished_blocks)
     return jsonify({
         "success": True,
         "block": iterate_models(student_exercise_block),
@@ -210,7 +201,7 @@ def complete_exercise():
     })
 
 
-@app.route(f'{api}/reset_lesson/<archive_id>')
+@student_lesson_bp.route(f'/reset/<archive_id>')
 @jwt_required()
 def reset_lesson(archive_id):
     student_lesson_archive = StudentLessonArchive.query.filter(StudentLessonArchive.id == archive_id).first()
@@ -226,7 +217,7 @@ def reset_lesson(archive_id):
     })
 
 
-@app.route(f'{api}/add_comment', methods=['POST'])
+@student_lesson_bp.route(f'/add/comment', methods=['POST'])
 def add_comment():
     # Parse JSON request data
     data = request.get_json()
@@ -266,5 +257,29 @@ def add_comment():
         return jsonify({"error": str(e)}), 500
 
 
-if __name__ == '__main__':
-    app.run(debug=True)
+@student_lesson_bp.route(f'/profile/<chapter_id>/<order>/', methods=['GET'])
+@jwt_required()
+@swag_from({
+    'tags': ['Lesson'],
+    "methods": ["GET"],
+})
+def lesson_profile(chapter_id, order):
+    identity = get_jwt_identity()
+    user = User.query.filter(User.classroom_user_id == identity).first()
+    lesson = Lesson.query.filter(Lesson.chapter_id == chapter_id, Lesson.order == order,
+                                 Lesson.disabled != True).first()
+    student_lesson = StudentLesson.query.filter(StudentLesson.lesson_id == lesson.id,
+                                                StudentLesson.student_id == user.student.id).first()
+    student_lesson_archive = StudentLessonArchive.query.filter(StudentLessonArchive.student_lesson == student_lesson.id,
+                                                               StudentLessonArchive.student_id == user.student.id,
+                                                               StudentLessonArchive.status == False).order_by(
+        StudentLessonArchive.id.desc()).first()
+
+    return jsonify(
+        {
+            "data": {
+                "lesson": student_lesson.convert_json(),
+                "archive": student_lesson_archive.id if student_lesson_archive else 0
+
+            }
+        })

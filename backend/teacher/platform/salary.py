@@ -1,8 +1,6 @@
-from app import api, app, request, jsonify, db, jwt_required, get_jwt_identity, gennis_server_url, turon_server_url
-from backend.models.basic_model import User, Student, Role, Subject, Teacher, StudentSubject, Group
+from app import api, app, jsonify, jwt_required, get_jwt_identity, gennis_server_url, turon_server_url
+from backend.models.basic_model import User, Student, Teacher, Group
 import requests
-from backend.basics.platform.utils import check_group_info, check_user_gennis, check_user_turon
-from flask_jwt_extended import create_access_token, create_refresh_token
 
 
 @app.route(f'{api}/teacher_salary_info', methods=['GET'])

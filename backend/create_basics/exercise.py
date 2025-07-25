@@ -15,91 +15,105 @@ exercise_bp = Blueprint('exercise_folder', __name__)
 
 @exercise_bp.route(f'/crud/', defaults={'pk': None}, methods=['POST', 'PUT', 'GET', 'DELETE'])
 @exercise_bp.route(f'/crud/<pk>/', methods=['POST', 'PUT', 'GET', 'DELETE'])
-@swag_from({"tags": ["Exercise"]},
-           methods=['POST', 'PUT', 'GET', 'DELETE'])
+@swag_from({"tags": ["Exercise"]}, methods=['POST', 'PUT', 'GET', 'DELETE'])
 @jwt_required()
 def crud(pk):
-    if request.method == "POST":
-        exercise = Exercise(name='unnamed')
+    method = request.method
+
+    def get_level_subject_type(data):
+        level = SubjectLevel.query.get(data.get('level'))
+        subject = Subject.query.get(data.get('subject'))
+        exercise_type = ExerciseTypes.query.get(data.get('type'))
+        return level, subject, exercise_type
+
+    if method == "POST":
+        data = request.get_json()
+        level, subject, exercise_type = get_level_subject_type(data)
+
+        if not all([level, subject, exercise_type]):
+            return create_msg("Invalid data provided", status=False)
+
+        exercise = Exercise(
+            name='unnamed',
+            level_id=level.id,
+            subject_id=subject.id,
+            type_id=exercise_type.id
+        )
         exercise.add_commit()
         return create_msg('unnamed', status=True, data=exercise.convert_json())
-    elif request.method == "PUT":
 
-        get_json = request.get_json()
-        random_status = False
+    elif method == "PUT":
+        data = request.get_json()
+        exercise = Exercise.query.get(pk)
+        if not exercise:
+            return edit_msg("Exercise not found", False)
 
-        if 'random' in get_json:
-            random_status = get_json['random']
-        selected_level = get_json['level']
-        selected_subject = get_json['subject']
-        name = get_json['title']
-        exercise_type = get_json['type']
-        get_exercise_type = ExerciseTypes.query.filter(ExerciseTypes.id == exercise_type).first()
-        get_level = SubjectLevel.query.filter(SubjectLevel.id == selected_level).first()
-        get_subject = Subject.query.filter(Subject.id == selected_subject).first()
-        exercise = Exercise.query.filter(Exercise.id == pk).first()
-        exercise.name = name
-        exercise.random_status = random_status
-        if get_level:
-            exercise.level_id = get_level.id
-        if get_exercise_type:
-            exercise.type_id = get_exercise_type.id
-        if get_subject:
-            exercise.subject_id = get_subject.id
+        level, subject, exercise_type = get_level_subject_type(data)
+        exercise.name = data.get('title', exercise.name)
+        exercise.random_status = data.get('random', False)
+
+        if level: exercise.level_id = level.id
+        if subject: exercise.subject_id = subject.id
+        if exercise_type: exercise.type_id = exercise_type.id
+
         db.session.commit()
-        return edit_msg(name, True, exercise.convert_json())
-    elif request.method == "GET":
+        return edit_msg(exercise.name, True, exercise.convert_json())
+
+    elif method == "GET":
         if pk:
-            exercise = Exercise.query.filter(Exercise.id == pk).first()
-            return jsonify({
-                "data": exercise.convert_json()
-            })
-        else:
-            page = int(request.args.get('page', 1))
-            per_page = int(request.args.get('per_page', 50))
-            search = request.args.get('search', '').strip()
-            subject_id = request.args.get('subject', '').strip()
-            type_id = request.args.get('type', '').strip()
-            level_id = request.args.get('level', '').strip()
+            exercise = Exercise.query.get(pk)
+            if not exercise:
+                return jsonify({"error": "Exercise not found"}), 404
+            return jsonify({"data": exercise.convert_json()})
 
-            query = Exercise.query
-            if search:
-                query = query.filter(Exercise.name.ilike(f"%{search}%"))
+        # List all with filters
+        page = int(request.args.get('page', 1))
+        per_page = int(request.args.get('per_page', 50))
+        search = request.args.get('search', '').strip()
+        subject_id = request.args.get('subject', '').strip()
+        type_id = request.args.get('type', '').strip()
+        level_id = request.args.get('level', '').strip()
 
-            if subject_id and subject_id != "all":
-                query = query.filter(Exercise.subject_id == subject_id)
+        query = Exercise.query
+        if search:
+            query = query.filter(Exercise.name.ilike(f"%{search}%"))
+        if subject_id and subject_id != "all":
+            query = query.filter(Exercise.subject_id == subject_id)
+        if type_id and type_id != "all":
+            query = query.filter(Exercise.type_id == type_id)
+        if level_id and level_id != "all":
+            query = query.filter(Exercise.level_id == level_id)
 
-            if type_id and type_id != "all":
-                query = query.filter(Exercise.type_id == type_id)
+        pagination = query.order_by(Exercise.id.desc()).paginate(page=page, per_page=per_page, error_out=False)
+        return jsonify({
+            "data": iterate_models(pagination.items, entire=True),
+            "total": pagination.total,
+            "page": pagination.page,
+            "pages": pagination.pages,
+            "per_page": pagination.per_page,
+            "has_next": pagination.has_next,
+            "has_prev": pagination.has_prev
+        })
 
-            if level_id and level_id != "all":
-                query = query.filter(Exercise.level_id == level_id)
+    elif method == "DELETE":
+        exercise = Exercise.query.get(pk)
+        if not exercise:
+            return del_msg("Exercise not found", False)
 
-            exercises = query.order_by(Exercise.id.desc()).paginate(page=page, per_page=per_page, error_out=False)
-
-            return jsonify({
-                "data": iterate_models(exercises.items, entire=True),
-                "total": exercises.total,
-                "page": exercises.page,
-                "pages": exercises.pages,
-                "per_page": exercises.per_page,
-                "has_next": exercises.has_next,
-                "has_prev": exercises.has_prev
-            })
-    elif request.method == "DELETE":
-        exercise = Exercise.query.filter(Exercise.id == pk).first()
-        blocks = ExerciseBlock.query.filter(ExerciseBlock.exercise_id == exercise.id).all()
+        blocks = ExerciseBlock.query.filter_by(exercise_id=exercise.id).all()
         for block in blocks:
-            block_img = ExerciseBlockImages.query.filter(ExerciseBlockImages.block_id == block.id).all()
-            for img in block_img:
+            images = ExerciseBlockImages.query.filter_by(block_id=block.id).all()
+            for img in images:
                 check_img_remove(img.img_id, File=File)
                 img.delete_commit()
-        exercise_answers = ExerciseAnswers.query.filter(ExerciseAnswers.exercise_id == exercise.id).all()
-        donelessons = StudentExercise.query.filter(StudentExercise.exercise_id == exercise.id).all()
 
         delete_list_models(blocks, File, type="double")
-        delete_list_models(exercise_answers, File)
-        delete_list_models(donelessons, File)
+        delete_list_models(
+            ExerciseAnswers.query.filter_by(exercise_id=exercise.id).all(), File
+        )
+        delete_list_models(
+            StudentExercise.query.filter_by(exercise_id=exercise.id).all(), File
+        )
         exercise.delete_commit()
         return del_msg(exercise.name, True)
 

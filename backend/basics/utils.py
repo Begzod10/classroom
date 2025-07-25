@@ -18,11 +18,9 @@ def check_group_info(gr, type="gennis"):
     group = Group.query.filter(group_filter == gr['id']).first()
 
     # Common logic to create or update the group
-
     if not group:
-        subject_name = gr['subjects']['name'] if type == "gennis" else None
-
-        subject = Subject.query.filter(Subject.name == subject_name).first() if subject_name else None
+        subject_name = gr['subjects']['name'] if type == "gennis" else gr['subject']
+        subject = Subject.query.filter(Subject.name == subject_name).first()
 
         # Create a new Group with either platform_id or turon_id
         group_data = {
@@ -34,6 +32,7 @@ def check_group_info(gr, type="gennis"):
         if type == "gennis":
             group = Group(platform_id=gr['id'], **group_data)
         else:
+
             group = Group(turon_id=gr['id'], **group_data)
         group.add_commit()
     else:

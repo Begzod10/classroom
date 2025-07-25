@@ -1,5 +1,5 @@
 from backend.models.basic_model import Exercise, Lesson, LessonBlock, StudentLesson, Student, File, User, \
-    StudentLessonArchive, SubjectLevel, Subject, Chapter
+    StudentLessonArchive, SubjectLevel, Subject, Chapter, StudentLevel
 from app import jsonify, request, db, or_, contains_eager, current_app
 from backend.models.settings import iterate_models
 from backend.basics.settings import add_file, check_img_remove, edit_msg, create_msg, del_msg
@@ -143,82 +143,6 @@ def profile(chapter_id, order):
             "prev": prev_order,
 
         })
-    elif request.method == "POST":
-        info = request.form.get("info")
-        get_json = json.loads(info)
-
-        name = get_json['name']
-        chapter = get_json['chapter']
-
-        lesson.name = name
-        lesson.chapter_id = chapter
-        number_test = get_json['number_test']
-        test_status = True if number_test else False
-        lesson.test_status = test_status
-        lesson.test_numbers = number_test
-        db.session.commit()
-        components = get_json['components']
-        index_order = 0
-
-        for component in components:
-            exercise_id = None
-            video_url = ''
-            clone = ''
-            desc = component['text'] if 'text' in component else ''
-            if component['type'] == "exc":
-                exercise_id = component['id']
-                exercise = Exercise.query.filter(Exercise.id == exercise_id).first()
-                if exercise not in lesson.exercises:
-                    lesson.exercises.append(exercise)
-                    db.session.commit()
-            elif component['type'] == "video":
-                video_url = component['videoLink']
-                clone = component
-            elif component['type'] == "snippet" or component['type'] == "file":
-                clone = component
-            elif component['type'] == "text":
-                clone = component['editorState']
-            lesson_img = None
-            lesson_file = None
-            if "index" in component:
-                lesson_img = request.files.get(f'component-{component["index"]}-img')
-                lesson_file = request.files.get(f'component-{component["index"]}-file')
-            get_img = None
-            if lesson_img:
-                get_img = add_file(lesson_img, "img", current_app, File)
-                if 'block_id' in component:
-                    lesson_block = LessonBlock.query.filter(LessonBlock.id == component['block_id']).first()
-                    if lesson_block.file_id:
-                        check_img_remove(lesson_block.file_id, File)
-                        lesson_block.file_id = get_img
-                        db.session.commit()
-            if lesson_file:
-                get_img = add_file(lesson_file, "file", current_app, File)
-                if 'block_id' in component:
-                    lesson_block = LessonBlock.query.filter(LessonBlock.id == component['block_id']).first()
-                    if lesson_block.file_id:
-                        check_img_remove(lesson_block.file_id, File)
-                        lesson_block.file_id = get_img
-                        db.session.commit()
-            if 'block_id' in component:
-                lesson_block = LessonBlock.query.filter(LessonBlock.id == component['block_id']).first()
-
-                lesson_block.exercise_id = exercise_id
-                lesson_block.video_url = video_url
-                lesson_block.desc = desc
-                lesson_block.clone = clone
-                lesson_block.type_block = component['type']
-
-                lesson_block.order = index_order
-                db.session.commit()
-            else:
-                lesson_block = LessonBlock(lesson_id=lesson_id, exercise_id=exercise_id, video_url=video_url,
-                                           desc=desc, order=index_order,
-                                           file_id=get_img, clone=clone, type_block=component['type'])
-                lesson_block.add_commit()
-            index_order += 1
-        return edit_msg(lesson.name, status=True)
-
     else:
         lesson.disabled = True
         db.session.commit()
@@ -479,17 +403,3 @@ def lesson_block_order():
     lesson_block_active.order, lesson_block_over.order = lesson_block_over.order, lesson_block_active.order
     db.session.commit()
     return jsonify({"success": True})
-
-
-@lesson_bp.route(f'/delete/block/<int:block_id>', methods=['DELETE'])
-@jwt_required()
-@swag_from({
-    'tags': ['Lesson'],
-    "methods": ["DELETE"],
-})
-def del_lesson_block(block_id):
-    lesson_block = LessonBlock.query.filter(LessonBlock.id == block_id).first()
-    if lesson_block.file_id:
-        check_img_remove(lesson_block.file_id, File)
-    lesson_block.delete_commit()
-    return del_msg(item="block", status=True)

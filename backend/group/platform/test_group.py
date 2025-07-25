@@ -1,6 +1,7 @@
 import pprint
 
-from app import api, app, request, jsonify, db, jwt_required, gennis_server_url
+from app import api, app, request, jsonify, db, jwt_required
+from backend.configs import gennis_server_url
 from backend.models.basic_model import Teacher, User, Group
 import requests
 
