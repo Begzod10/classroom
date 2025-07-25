@@ -1,13 +1,19 @@
-from app import app, api, jsonify, request, contains_eager, db
-from backend.models.basic_model import Exercise, Subject, SubjectLevel, StudentExercise, StudentLevel, StudentLesson, \
-    ExerciseBlock, Group, Student, Teacher, Chapter, Lesson, StudentChapter, ExerciseAnswers, StudentExerciseBlock, \
+from flasgger import swag_from
+from flask import Blueprint
+from flask_jwt_extended import jwt_required
+
+from app import jsonify, request, contains_eager
+from backend.models.basic_model import Exercise, SubjectLevel, StudentExercise, StudentLesson, \
+    ExerciseBlock, Group, Student, Chapter, Lesson, StudentChapter, ExerciseAnswers, StudentExerciseBlock, \
     StudentLessonArchive
 from backend.models.settings import iterate_models
-from flask_jwt_extended import jwt_required
-from sqlalchemy.orm import joinedload
+
+lesson_degree = Blueprint('lesson_degree', __name__)
 
 
-@app.route(f'{api}/group_degree', methods=['POST'])
+@lesson_degree.route('/group_degree/', methods=['POST'])
+@swag_from({"tags": ["Lesson_degree"]}, methods=['POST'])
+# @app.route(f'{api}/group_degree', methods=['POST'])
 @jwt_required()
 def group_degree():
     group_id = request.get_json()['group_id']
@@ -192,7 +198,10 @@ def group_degree():
         })
 
 
-@app.route(f'{api}/student_exercise_block/<lesson_id>/<student_id>')
+@lesson_degree.route('/student_exercise_block/<lesson_id>/<student_id>', methods=['POST', 'GET'])
+@swag_from({"tags": ["Lesson_degree"]}, methods=['POST'])
+
+# @app.route(f'{api}/student_exercise_block/<lesson_id>/<student_id>')
 def student_exercise_block(lesson_id, student_id):
     lesson = StudentLesson.query.filter(StudentLesson.lesson_id == lesson_id,
                                         StudentLesson.student_id == student_id).first()

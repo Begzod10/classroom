@@ -15,6 +15,7 @@ from backend.extentions import celery_init_app
 from dotenv import load_dotenv
 from backend.extentions import db, migrate, jwt, api, cors, admin
 from backend.pisa.api.views import register_pisa_views
+from backend.teacher.views import register_create_teacher
 
 from backend.create_basics.views import register_create_basics
 from flasgger import Swagger
@@ -24,7 +25,6 @@ from backend.basics.views import register_views
 from backend.student.views import register_student_routes
 
 load_dotenv()
-
 
 def create_app():
     app = Flask(
@@ -56,6 +56,7 @@ def create_app():
     register_create_basics(api_prefix, app)
     register_parent_views(api_prefix, app)
     register_mobile_parent_views(api_prefix, app)
+    register_create_teacher(api_prefix, app)
 
     app.config.from_mapping(
         CELERY=dict(
@@ -85,7 +86,6 @@ from backend.student.views import *
 from backend.user.views import *
 
 # teacher
-from backend.teacher.views import *
 
 # class test
 from backend.class_test.views import *

@@ -1,9 +1,16 @@
-from app import api, app, request, jsonify, db, jwt_required, get_jwt_identity, gennis_server_url
-from backend.models.basic_model import Teacher, User, Group
 import requests
+from flask import Blueprint
+
+from app import request, jsonify, jwt_required, get_jwt_identity
+from backend.models.basic_model import User, Group
+from backend.configs import gennis_server_url
+observe_blueprint = Blueprint('observe', __name__)
+from flasgger import swag_from
 
 
-@app.route(f'{api}/observe_info')
+@observe_blueprint.route('/observe_info')
+# @app.route(f'{api}/observe_info')
+@swag_from({'tags': ['Observation'], "methods": ["GET"]})
 @jwt_required()
 def observe_info():
     indentity = get_jwt_identity()
@@ -14,8 +21,11 @@ def observe_info():
     pass
 
 
-@app.route(f'{api}/groups_to_observe', defaults={"location_id": None}, methods=['POST', 'GET'])
-@app.route(f'{api}/groups_to_observe/<int:location_id>', methods=['POST', 'GET'])
+@observe_blueprint.route('/groups_to_observe', defaults={"location_id": None}, methods=['POST', 'GET'])
+@observe_blueprint.route('/groups_to_observe/<int:location_id>', methods=['POST', 'GET'])
+# @app.route(f'{api}/groups_to_observe', defaults={"location_id": None}, methods=['POST', 'GET'])
+# @app.route(f'{api}/groups_to_observe/<int:location_id>', methods=['POST', 'GET'])
+@swag_from({'tags': ['Observation'], "methods": ["GET", "POST"]})
 @jwt_required()
 def groups_to_observe(location_id):
     indentity = get_jwt_identity()
@@ -33,7 +43,9 @@ def groups_to_observe(location_id):
         return jsonify(response.json())
 
 
-@app.route(f'{api}/teacher_observe/<int:group_id>', methods=['POST', 'GET'])
+@observe_blueprint.route('/teacher_observe/<int:group_id>', methods=['POST', 'GET'])
+# @app.route(f'{api}/teacher_observe/<int:group_id>', methods=['POST', 'GET'])
+@swag_from({'tags': ['Observation'], "methods": ["GET", "POST"]})
 @jwt_required()
 def teacher_observe(group_id):
     indentity = get_jwt_identity()
@@ -50,8 +62,11 @@ def teacher_observe(group_id):
         return jsonify(response.json())
 
 
-@app.route(f'{api}/observed_group/<int:group_id>', defaults={"date": None})
-@app.route(f'{api}/observed_group/<int:group_id>/<date>')
+@observe_blueprint.route('/observed_group/<int:group_id>', defaults={"date": None})
+@observe_blueprint.route('/observed_group/<int:group_id>/<date>')
+# @app.route(f'{api}/observed_group/<int:group_id>', defaults={"date": None})
+# @app.route(f'{api}/observed_group/<int:group_id>/<date>')
+@swag_from({'tags': ['Observation'], "methods": ["GET"]})
 @jwt_required()
 def observed_group(group_id, date):
     indentity = get_jwt_identity()
@@ -63,7 +78,9 @@ def observed_group(group_id, date):
         return jsonify(response.json())
 
 
-@app.route(f'{api}/observed_group_info/<int:group_id>', methods=["POST"])
+@observe_blueprint.route('/observed_group_info/<int:group_id>', methods=["POST"])
+@swag_from({'tags': ['Observation'], "methods": ["POST"]})
+# @app.route(f'{api}/observed_group_info/<int:group_id>', methods=["POST"])
 @jwt_required()
 def observed_group_info(group_id):
     indentity = get_jwt_identity()
