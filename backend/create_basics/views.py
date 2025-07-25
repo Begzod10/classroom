@@ -1,6 +1,3 @@
-# from .exercise import *
-
-
 from .subject import subject_bp
 from .chapter import chapter_bp
 from .level import level_bp

@@ -135,8 +135,10 @@ def pisa_block_questions(pk):
             pisa_block = PisaBlockText.query.filter_by(id=pk).first()
             if not pisa_block:
                 return jsonify({"msg": "Pisa topilmadi", "success": False}), 404
-            if pisa_block.file_id and file_id:
-                remove_file(pisa_block.file_id, PisaFileType)
+
+            if file_id:
+                if pisa_block.file_id:
+                    remove_file(pisa_block.file_id, PisaFileType)
                 pisa_block.file_id = file_id
 
             pisa_block.pisa_id = pisa_id

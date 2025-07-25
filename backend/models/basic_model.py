@@ -266,6 +266,7 @@ class File(db.Model):
     url = Column(String)
     size = Column(String)
     file_name = Column(String)
+    original_name = Column(String)
     subjects = relationship("Subject", backref="file", order_by="Subject.id")
     exercise_answers = relationship("ExerciseAnswers", backref="file", order_by="ExerciseAnswers.id")
     lesson_block = relationship("LessonBlock", backref="file", order_by="LessonBlock.id")
@@ -279,7 +280,8 @@ class File(db.Model):
             "url": self.url,
             "size": self.size,
             "name": self.file_name,
-            "type_file": self.type_file
+            "type_file": self.type_file,
+            "original_name": self.original_name
         }
 
     def add(self):

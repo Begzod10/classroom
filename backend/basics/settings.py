@@ -41,6 +41,7 @@ def save_img(photo, app, type_file=None):
     tr = {ord(a): ord(b) for a, b in zip(*symbols)}
 
     file_name = secure_filename(photo.filename.translate(tr))
+    original_name = photo.filename
     unique_name = generate_unique_filename(file_name)
 
     if type_file == "img":
@@ -57,18 +58,20 @@ def save_img(photo, app, type_file=None):
 
     os.makedirs(upload_folder, exist_ok=True)
     photo.save(os.path.join(upload_folder, unique_name))
-    return (photo_url, unique_name)
+    return (photo_url, unique_name, original_name)
 
 
 def add_file(photo, type_file, app, File):
-    photo_url, file_name = save_img(photo, app, type_file=type_file)
+    photo_url, file_name, original_name = save_img(photo, app, type_file=type_file)
     mb_size = str(define_size(f'frontend/build/{photo_url}'))
 
     img_add = File.query.filter(
         File.url == photo_url,
         File.size == mb_size,
         File.type_file == type_file,
-        File.file_name == file_name
+        File.file_name == file_name,
+        File.original_name == original_name
+
     ).first()
 
     if not img_add:
@@ -76,7 +79,8 @@ def add_file(photo, type_file, app, File):
             url=photo_url,
             size=mb_size,
             type_file=type_file,
-            file_name=file_name
+            file_name=file_name,
+            original_name=original_name
         )
         img_add.add()
 

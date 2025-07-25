@@ -12,29 +12,13 @@ from flasgger import swag_from
 subject_bp = Blueprint('subject_folder', __name__)
 
 
-@subject_bp.route(f"/list/", methods=["GET", "POST"])
+@subject_bp.route("/list/", methods=["GET", "POST"])
 @cross_origin()
 @jwt_required()
-# @swag_from({
-#     'tags': ['Subject'],
-#     'summary': 'Get subjects based on user role',
-#     'responses': {
-#         200: {
-#             'description': 'List of subjects',
-#             'schema': {
-#                 'type': 'object',
-#                 'properties': {
-#                     'subjects': {
-#                         'type': 'array',
-#                         'items': {
-#                             'type': 'object'
-#                         }
-#                     }
-#                 }
-#             }
-#         }
-#     }
-# })
+@swag_from({
+    'tags': ['Subject'],
+    "methods": ["GET"],
+})
 def subject_list():
     identity = get_jwt_identity()
     user = User.query.filter_by(classroom_user_id=identity).first()

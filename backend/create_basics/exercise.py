@@ -153,7 +153,7 @@ def block_text(pk):
         text = data.get('text')
         words = data.get('words', [])
         editor_state = data.get('editorState')
-
+        pprint(data)
         if not exercise or not component:
             return jsonify({"success": False, "msg": "Invalid exercise or component"}), 400
 
@@ -182,10 +182,12 @@ def block_text(pk):
             for word in words:
                 word_text = word.get('text', [''])[0]
                 word_index = word.get('index')
-
+                status_word = word.get('statusWord')
+                status = True if status_word == "correct" else False
                 if word_index in existing_answers:
                     answer = existing_answers[word_index]
                     answer.desc = word_text
+                    answer.status = status
                     # Mark as reused
                     updated_orders.append(word_index)
                 else:
@@ -197,7 +199,8 @@ def block_text(pk):
                         order=word_index,
                         type_id=exercise_type.id,
                         subject_id=subject.id,
-                        level_id=level.id
+                        level_id=level.id,
+                        status=status
                     )
                     db.session.add(answer)
 
@@ -553,9 +556,14 @@ def block_code(pk):
         return jsonify({"success": True})
 
 
-@exercise_bp.route('block/order/', defaults={"pk": None}, methods=['POST', 'PUT', 'DELETE'])
+@exercise_bp.route('block/order/', methods=['PUT'])
 @swag_from({"tags": ["Exercise"],
-            "methods": ["POST", "PUT", "DELETE"]})
-def block_order(pk):
-    if request.method == "POST":
-        pprint(request.get_json())
+            "methods": ["PUT"]})
+def block_order():
+    if request.method == "PUT":
+        active = request.get_json()['active']
+        over = request.get_json()['over']
+        ExerciseBlock.query.filter(ExerciseBlock.id == active['id']).first().order = over['index']
+        ExerciseBlock.query.filter(ExerciseBlock.id == over['id']).first().order = active['index']
+        db.session.commit()
+        return jsonify({"success": True})

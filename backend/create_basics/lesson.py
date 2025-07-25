@@ -1,5 +1,5 @@
 from backend.models.basic_model import Exercise, Lesson, LessonBlock, StudentLesson, Student, File, User, \
-    StudentLessonArchive
+    StudentLessonArchive, SubjectLevel, Subject, Chapter
 from app import jsonify, request, db, or_, contains_eager, current_app
 from backend.models.settings import iterate_models
 from backend.basics.settings import add_file, check_img_remove, edit_msg, create_msg, del_msg
@@ -14,7 +14,7 @@ from flasgger import swag_from
 lesson_bp = Blueprint('lesson_folder', __name__)
 
 
-@lesson_bp.route(f'/filter_exercise/<subject_id>/<level_id>')
+@lesson_bp.route(f'/filter/exercise/<subject_id>/<level_id>')
 @jwt_required()
 @swag_from({
     'tags': ['Lesson'],
@@ -29,93 +29,61 @@ def filter_exercise(subject_id, level_id):
     })
 
 
-@lesson_bp.route(f'/info/<int:level_id>', methods=["GET", 'POST'])
+@lesson_bp.route(f'/info/', defaults={"pk": None}, methods=["GET", 'POST', 'DELETE', 'PUT'])
+@lesson_bp.route(f'/info/<pk>/', methods=["GET", 'POST', 'DELETE', 'PUT'])
 @jwt_required()
 @swag_from({
     'tags': ['Lesson'],
-    "methods": ["GET", "POST"],
+    "methods": ["GET", "POST", "PUT", "DELETE"],
 })
-def info(level_id):
+def info(pk):
     identity = get_jwt_identity()
     user = User.query.filter_by(user_id=identity).first()
 
-    if request.method == "POST":
-        info = request.form.get("info")
-        get_json = json.loads(info)
+    if request.method == "POST" or request.method == "PUT":
+        get_json = request.get_json()
+        if request.method == "POST":
+            level_id = get_json['level_id']
+            get_level = SubjectLevel.query.filter(SubjectLevel.id == level_id).first()
+            get_subject = Subject.query.filter(Subject.id == get_level.subject_id).first()
+            last_chapter = Chapter.query.filter(Chapter.level_id == get_level.id).order_by(Chapter.order).first()
+            lesson_add = Lesson(name="undefined", level_id=level_id, subject_id=get_subject.id,
+                                chapter_id=last_chapter.id, order=0, test_status=False, test_numbers=0)
+            lesson_add.add_commit()
+            return create_msg("Lesson", status=True, data=lesson_add.convert_json())
+        else:
+            name = get_json['name']
+            number_test = get_json['number_test']
+            test_status = True if number_test else False
+            chapter = get_json['chapter']
+            order = 0
+            lesson_add = Lesson.query.filter(Lesson.id == pk).first()
+            lesson_get = Lesson.query.filter(Lesson.level_id == lesson_add.level_id,
+                                             Lesson.subject_id == lesson_add.subject_id,
+                                             Lesson.chapter_id == chapter, Lesson.disabled == False).order_by(
+                Lesson.order).all()
+            if lesson_get:
+                order = len(lesson_get)
 
-        selected_subject = get_json['subjectId']
-        name = get_json['name']
-        components = get_json['components']
+            lesson_add.name = name
+            lesson_add.chapter_id = chapter
+            lesson_add.order = order
+            lesson_add.test_status = test_status
+            lesson_add.test_numbers = number_test
+            db.session.commit()
+            return edit_msg(name, True, lesson_add.convert_json())
 
-        number_test = get_json['number_test']
-        test_status = True if number_test else False
-        chapter = get_json['chapter']
-        order = 0
-        lesson_get = Lesson.query.filter(Lesson.level_id == level_id, Lesson.subject_id == selected_subject,
-                                         Lesson.chapter_id == chapter, Lesson.disabled == False).order_by(
-            Lesson.order).all()
-        if lesson_get:
-            order = len(lesson_get)
-        lesson_add = Lesson(subject_id=selected_subject, level_id=level_id, name=name, order=order, chapter_id=chapter,
-                            test_status=test_status, test_numbers=number_test)
-        lesson_add.add_commit()
-        index_order = 0
-        for component in components:
-            exercise_id = None
-            video_url = ''
-            desc = component['text'] if 'text' in component else ''
-            clone = ''
-            if component['type'] == "exc":
-                exercise_id = component['id']
-                exercise = Exercise.query.filter(Exercise.id == exercise_id).first()
-
-                lesson_add.exercises.append(exercise)
-                db.session.commit()
-            elif component['type'] == "video" or component['type'] == "snippet" or component['type'] == "file":
-                video_url = ''
-                if 'videoLink' in component:
-                    video_url = component['videoLink']
-                clone = component
-            elif component['type'] == "text":
-                clone = component['editorState']
-            lesson_img = request.files.get(f'component-{component["index"]}-img')
-            lesson_file = request.files.get(f'component-{component["index"]}-file')
-            get_img = None
-            if lesson_img:
-                get_img = add_file(lesson_img, "img", current_app, File)
-
-            if lesson_file:
-                get_img = add_file(lesson_file, "file", current_app, File)
-            lesson_block = LessonBlock(lesson_id=lesson_add.id, exercise_id=exercise_id, video_url=video_url, desc=desc,
-                                       file_id=get_img, clone=clone, type_block=component['type'], order=index_order)
-            lesson_block.add_commit()
-            index_order += 1
-        return create_msg(name, True)
-
-    lessons = Lesson.query.filter(Lesson.level_id == level_id, Lesson.disabled != True).order_by(Lesson.order).all()
-    if user.student:
-        student = Student.query.filter(Student.user_id == user.id).first()
-        for lesson in lessons:
-            student_lesson = StudentLesson.query.filter(StudentLesson.lesson_id == lesson.id,
-                                                        StudentLesson.student_id == student.id,
-                                                        StudentLesson.level_id == level_id).first()
-            if not student_lesson:
-                student_lesson = StudentLesson(lesson_id=lesson.id, student_id=student.id, level_id=level_id)
-                student_lesson.add_commit()
-
-        student_lessons = db.session.query(StudentLesson).join(StudentLesson.lesson).options(
-            contains_eager(StudentLesson.lesson)).filter(Lesson.disabled != True,
-                                                         StudentLesson.student_id == student.id).order_by(
-            StudentLesson.id).all()
+    elif request.method == "GET":
+        lesson = Lesson.query.filter(Lesson.id == pk).first()
         return jsonify({
-            "length": len(lessons),
-            "data": iterate_models(student_lessons)
+            "data": lesson.convert_json(entire=True)
         })
 
-    return jsonify({
-        "data": iterate_models(lessons),
-        "length": len(lessons)
-    })
+    elif request.method == "DELETE":
+        lesson = Lesson.query.filter(Lesson.id == pk).first()
+        lesson.disabled = True
+        db.session.commit()
+        return del_msg("Lesson", status=True, data=lesson.convert_json())
 
 
 @lesson_bp.route(f'/profile/<chapter_id>/<order>', methods=['POST', 'GET', 'DELETE'])
@@ -264,6 +232,253 @@ def profile(chapter_id, order):
             db.session.commit()
             index += 1
         return del_msg(lesson.name, True)
+
+
+@lesson_bp.route(f'/block/text/', defaults={"pk": None}, methods=['POST', 'GET', 'DELETE', 'PUT'])
+@lesson_bp.route(f'/block/text/<int:pk>/', methods=['POST', 'GET', 'DELETE', 'PUT'])
+@jwt_required()
+@swag_from({
+    'tags': ['Lesson'],
+    "methods": ["POST", "GET", "DELETE", "PUT"],
+})
+def lesson_block_text(pk):
+    if request.method == "POST" or request.method == "PUT":
+        info = request.get_json()
+        clone = info['editorState']
+        text = info['text']
+
+        if request.method == "POST":
+            order = 0
+            if LessonBlock.query.filter(LessonBlock.lesson_id == info['lesson_id']).all():
+                order = LessonBlock.query.filter(LessonBlock.lesson_id == info['lesson_id']).count()
+            add_block = LessonBlock(desc=text, lesson_id=info['lesson_id'], clone=clone, type_block=info['type'],
+                                    order=order)
+            add_block.add_commit()
+            return jsonify(add_block.convert_json())
+        elif request.method == "PUT":
+            lesson_block = LessonBlock.query.filter(LessonBlock.id == pk).first()
+            lesson_block.desc = text
+            lesson_block.clone = clone
+            lesson_block.type_block = info['type']
+            lesson_block.lesson_id = info['lesson_id']
+            db.session.commit()
+            return jsonify(lesson_block.convert_json())
+    elif request.method == "DELETE":
+        lesson_block = LessonBlock.query.filter(LessonBlock.id == pk).first()
+        if lesson_block.file_id:
+            check_img_remove(lesson_block.file_id, File)
+        lesson_block.delete_commit()
+        return del_msg(item="block", status=True)
+
+
+@lesson_bp.route(f'/block/video/', defaults={"pk": None}, methods=['POST', 'GET', 'DELETE', 'PUT'])
+@lesson_bp.route(f'/block/video/<int:pk>/', methods=['POST', 'GET', 'DELETE', 'PUT'])
+@jwt_required()
+@swag_from({
+    'tags': ['Lesson'],
+    "methods": ["POST", "GET", "DELETE", "PUT"],
+})
+def lesson_block_video(pk):
+    if request.method == "POST" or request.method == "PUT":
+        info = request.get_json()
+        video_url = info['video_link']
+        if request.method == "POST":
+            order = 0
+            if LessonBlock.query.filter(LessonBlock.lesson_id == info['lesson_id']).all():
+                order = LessonBlock.query.filter(LessonBlock.lesson_id == info['lesson_id']).count()
+            add_block = LessonBlock(video_url=video_url, lesson_id=info['lesson_id'], type_block=info['type'],
+                                    order=order)
+            add_block.add_commit()
+            return jsonify(add_block.convert_json())
+        elif request.method == "PUT":
+            lesson_block = LessonBlock.query.filter(LessonBlock.id == pk).first()
+            lesson_block.video_url = video_url
+            lesson_block.type_block = info['type']
+            lesson_block.lesson_id = info['lesson_id']
+            db.session.commit()
+            return jsonify(lesson_block.convert_json())
+    elif request.method == "DELETE":
+        lesson_block = LessonBlock.query.filter(LessonBlock.id == pk).first()
+        if lesson_block.file_id:
+            check_img_remove(lesson_block.file_id, File)
+        lesson_block.delete_commit()
+        return del_msg(item="block", status=True)
+
+
+@lesson_bp.route(f'/block/image/', defaults={"pk": None}, methods=['POST', 'GET', 'DELETE', 'PUT'])
+@lesson_bp.route(f'/block/image/<int:pk>/', methods=['POST', 'GET', 'DELETE', 'PUT'])
+@jwt_required()
+@swag_from({
+    'tags': ['Lesson'],
+    "methods": ["POST", "GET", "DELETE", "PUT"],
+})
+def lesson_block_image(pk):
+    if request.method == "POST" or request.method == "PUT":
+        img = request.files['img']
+        get_json = request.form.get('info')
+        get_json = json.loads(get_json)
+        get_img = None
+        if 'img' in request.files:
+            get_img = add_file(img, "img", current_app, File)
+        if request.method == "POST":
+            order = 0
+            if LessonBlock.query.filter(LessonBlock.lesson_id == get_json['lesson_id']).all():
+                order = LessonBlock.query.filter(LessonBlock.lesson_id == get_json['lesson_id']).count()
+            add_block = LessonBlock(file_id=get_img, lesson_id=get_json['lesson_id'],
+                                    type_block=get_json['type'], order=order)
+            add_block.add_commit()
+            return jsonify(add_block.convert_json())
+        elif request.method == "PUT":
+            lesson_block = LessonBlock.query.filter(LessonBlock.id == pk).first()
+
+            if get_img:
+                if lesson_block.file_id:
+                    check_img_remove(lesson_block.file_id, File)
+                lesson_block.file_id = get_img
+            lesson_block.type_block = get_json['type']
+            lesson_block.lesson_id = get_json['lesson_id']
+            db.session.commit()
+            return jsonify(lesson_block.convert_json())
+    elif request.method == "DELETE":
+        lesson_block = LessonBlock.query.filter(LessonBlock.id == pk).first()
+        if lesson_block.file_id:
+            check_img_remove(lesson_block.file_id, File)
+        lesson_block.delete_commit()
+        return del_msg(item="block", status=True)
+
+
+@lesson_bp.route(f'/block/file/', defaults={"pk": None}, methods=['POST', 'GET', 'DELETE', 'PUT'])
+@lesson_bp.route(f'/block/file/<int:pk>/', methods=['POST', 'GET', 'DELETE', 'PUT'])
+@jwt_required()
+@swag_from({
+    'tags': ['Lesson'],
+    "methods": ["POST", "GET", "DELETE", "PUT"],
+})
+def lesson_block_file(pk):
+    if request.method == "POST" or request.method == "PUT":
+        file = request.files['file']
+        get_json = request.form.get('info')
+        get_json = json.loads(get_json)
+        get_file = None
+        if 'file' in request.files:
+            get_file = add_file(file, "file", current_app, File)
+        if request.method == "POST":
+            order = 0
+            if LessonBlock.query.filter(LessonBlock.lesson_id == get_json['lesson_id']).all():
+                order = LessonBlock.query.filter(LessonBlock.lesson_id == get_json['lesson_id']).count()
+            add_block = LessonBlock(file_id=get_file, lesson_id=get_json['lesson_id'],
+                                    type_block=get_json['type'], order=order)
+            add_block.add_commit()
+            return jsonify(add_block.convert_json())
+        elif request.method == "PUT":
+            lesson_block = LessonBlock.query.filter(LessonBlock.id == pk).first()
+
+            if get_file:
+                if lesson_block.file_id:
+                    check_img_remove(lesson_block.file_id, File)
+                lesson_block.file_id = get_file
+            lesson_block.type_block = get_json['type']
+            lesson_block.lesson_id = get_json['lesson_id']
+            db.session.commit()
+            return jsonify(lesson_block.convert_json())
+    else:
+        lesson_block = LessonBlock.query.filter(LessonBlock.id == pk).first()
+        if lesson_block.file_id:
+            check_img_remove(lesson_block.file_id, File)
+        lesson_block.delete_commit()
+        return del_msg(item="block", status=True)
+
+
+@lesson_bp.route(f'/block/code/', defaults={"pk": None}, methods=['POST', 'GET', 'DELETE', 'PUT'])
+@lesson_bp.route(f'/block/code/<int:pk>/', methods=['POST', 'GET', 'DELETE', 'PUT'])
+@jwt_required()
+@swag_from({
+    'tags': ['Lesson'],
+    "methods": ["POST", "GET", "DELETE", "PUT"],
+})
+def lesson_block_code(pk):
+    if request.method == "POST" or request.method == "PUT":
+        info = request.get_json()
+        code = info['text']
+        if request.method == "POST":
+            order = 0
+            if LessonBlock.query.filter(LessonBlock.lesson_id == info['lesson_id']).all():
+                order = LessonBlock.query.filter(LessonBlock.lesson_id == info['lesson_id']).count()
+            add_block = LessonBlock(desc=code, lesson_id=info['lesson_id'], type_block=info['type'],
+                                    order=order, inner_type=info['innerType'])
+            add_block.add_commit()
+            return jsonify(add_block.convert_json())
+        elif request.method == "PUT":
+            lesson_block = LessonBlock.query.filter(LessonBlock.id == pk).first()
+            lesson_block.desc = code
+            lesson_block.type_block = info['type']
+            lesson_block.lesson_id = info['lesson_id']
+            lesson_block.inner_type = info['innerType']
+            db.session.commit()
+            return jsonify(lesson_block.convert_json())
+    elif request.method == "DELETE":
+        lesson_block = LessonBlock.query.filter(LessonBlock.id == pk).first()
+        lesson_block.delete_commit()
+        return del_msg(item="block", status=True)
+
+
+@lesson_bp.route(f'/block/exercise/', defaults={"pk": None}, methods=['POST', 'GET', 'DELETE', 'PUT'])
+@lesson_bp.route(f'/block/exercise/<int:pk>/', methods=['POST', 'GET', 'DELETE', 'PUT'])
+@jwt_required()
+@swag_from({
+    'tags': ['Lesson'],
+    "methods": ["POST", "GET", "DELETE", "PUT"],
+})
+def lesson_block_exercise(pk):
+    if request.method == "POST" or request.method == "PUT":
+        info = request.get_json()
+        exercise_id = info['exercise_id']
+        lesson_id = info['lesson_id']
+        lesson = Lesson.query.filter(Lesson.id == lesson_id).first()
+        get_exercise = Exercise.query.filter(Exercise.id == exercise_id).first()
+        if get_exercise not in lesson.exercises:
+            lesson.exercises.append(get_exercise)
+        if request.method == "POST":
+            order = 0
+            if LessonBlock.query.filter(LessonBlock.lesson_id == info['lesson_id']).all():
+                order = LessonBlock.query.filter(LessonBlock.lesson_id == info['lesson_id']).count()
+            add_block = LessonBlock(exercise_id=exercise_id, lesson_id=info['lesson_id'], type_block=info['type'],
+                                    order=order)
+            add_block.add_commit()
+            return jsonify(add_block.convert_json())
+        elif request.method == "PUT":
+            lesson_block = LessonBlock.query.filter(LessonBlock.id == pk).first()
+            lesson_block.exercise_id = exercise_id
+            lesson_block.type_block = info['type']
+            lesson_block.lesson_id = info['lesson_id']
+            db.session.commit()
+            return jsonify(lesson_block.convert_json())
+
+    elif request.method == "DELETE":
+        lesson_block = LessonBlock.query.filter(LessonBlock.id == pk).first()
+        lesson = Lesson.query.filter(Lesson.id == lesson_block.lesson_id).first()
+        get_exercise = Exercise.query.filter(Exercise.id == lesson_block.exercise_id).first()
+        if get_exercise in lesson.exercises:
+            lesson.exercises.remove(get_exercise)
+            db.session.commit()
+        lesson_block.delete_commit()
+        return del_msg(item="block", status=True)
+
+
+@lesson_bp.route(f'/block/order/', methods=['PUT'])
+@jwt_required()
+@swag_from({
+    'tags': ['Lesson'],
+    "methods": ["PUT"],
+})
+def lesson_block_order():
+    active = request.get_json()['active']
+    over = request.get_json()['over']
+    lesson_block_active = LessonBlock.query.filter(LessonBlock.id == active['id']).first()
+    lesson_block_over = LessonBlock.query.filter(LessonBlock.id == over['id']).first()
+    lesson_block_active.order, lesson_block_over.order = lesson_block_over.order, lesson_block_active.order
+    db.session.commit()
+    return jsonify({"success": True})
 
 
 @lesson_bp.route(f'/delete/block/<int:block_id>', methods=['DELETE'])
