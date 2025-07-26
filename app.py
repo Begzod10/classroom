@@ -56,7 +56,7 @@ def create_app():
     register_create_basics(api_prefix, app)
     register_parent_views(api_prefix, app)
     register_mobile_parent_views(api_prefix, app)
-
+    register_student_routes(api_prefix, app)
     app.config.from_mapping(
         CELERY=dict(
             broker_url=os.getenv('CELERY_BROKER_URL', 'redis://localhost:6379/2'),

@@ -1,7 +1,7 @@
 import datetime
 
 from backend.models.basic_model import db, Column, relationship, Integer, String, ForeignKey, Float, Boolean, JSON, \
-    func, DateTime
+    DateTime
 
 
 class Subject(db.Model):
@@ -35,25 +35,6 @@ class Subject(db.Model):
                 "status_deleted": deleted,
                 "img": self.file.url if self.file and self.file.url else None
             }
-        # info = {
-        #     "id": self.id,
-        #     "name": self.name,
-        #     "img": None,
-        #     "desc": self.desc,
-        #     "disabled": self.disabled,
-        #     "status_deleted": deleted,
-        #     "levels": []
-        # }
-        # if self.file and self.file.url:
-        #     info['img'] = self.file.url
-        # for level in self.levels:
-        #     level_info = {
-        #         "id": level.id,
-        #         "name": level.name,
-        #         "disabled": level.disabled
-        #     }
-        #     info['level'].append(level_info)
-        # return info
 
     def add_commit(self):
         db.session.add(self)
@@ -236,7 +217,14 @@ class LessonBlock(db.Model):
     order = Column(Integer)
     inner_type = Column(String)
 
-    def convert_json(self):
+    def convert_json(self, student_id=None):
+        student_exercise = StudentExercise.query.filter(
+            StudentExercise.student_id == student_id,
+            StudentExercise.exercise_id == self.exercise_id
+        ).first()
+
+        exercise = Exercise.query.filter(Exercise.id == self.exercise_id).first()
+
         return {
             "id": self.id,
             "lesson_id": self.lesson_id,
@@ -249,8 +237,8 @@ class LessonBlock(db.Model):
             "clone": self.clone,
             "type_block": self.type_block,
             "order": self.order,
-            "exercise": Exercise.query.filter(
-                Exercise.id == self.exercise_id).first().convert_json() if self.exercise_id else None,
+            "exercise": exercise.convert_json() if exercise else None,
+            "student_exercise": student_exercise.convert_json() if student_exercise else None,
             "inner_type": self.inner_type,
         }
 
@@ -438,49 +426,6 @@ class ExerciseAnswers(db.Model):
         db.session.commit()
 
 
-class StudentExercise(db.Model):
-    __tablename__ = "student_exercise"
-    id = Column(Integer, primary_key=True)
-    student_id = Column(Integer, ForeignKey("student.id"))
-    lesson_id = Column(Integer, ForeignKey("lesson.id"))
-    level_id = Column(Integer, ForeignKey("subject_level.id"))
-    type_id = Column(Integer, ForeignKey("exercise_types.id"))
-    subject_id = Column(Integer, ForeignKey("subject.id"))
-    exercise_id = Column(Integer, ForeignKey("exercise.id"))
-    boolean = Column(Boolean)
-    block_id = Column(Integer, ForeignKey('exercise_block.id'))
-    answer_id = Column(Integer, ForeignKey('exercise_answers.id'))
-    value = Column(JSON())
-    student_chapter_id = Column(Integer, ForeignKey('student_chapter.id'))
-    chapter_id = Column(Integer, ForeignKey('chapter.id'))
-    student_lesson_id = Column(Integer, ForeignKey('student_lesson.id'))
-    student_lesson_archive_id = Column(Integer, ForeignKey('student_lesson_archive.id'))
-
-    def convert_json(self, entire=False):
-        if entire:
-            exercise = {
-                "block": {
-                    "id": self.block_id,
-                    "answers": []
-                }
-            }
-            for answer in self.exercise_block.exercise_answers:
-                block_info = {
-                    "id": answer.id,
-                    "answer": answer.status
-                }
-                exercise['block']['answers'].append(block_info)
-            return exercise
-
-    def add_commit(self):
-        db.session.add(self)
-        db.session.commit()
-
-    def delete_commit(self):
-        db.session.delete(self)
-        db.session.commit()
-
-
 class ExerciseBlockImages(db.Model):
     __tablename__ = "exercise_block_images"
     id = Column(Integer, primary_key=True)
@@ -522,8 +467,78 @@ class StudentLesson(db.Model):
             "level_id": self.subject_level.name,
             "order": self.lesson.order,
             "percentage": self.percentage,
-            "finished": self.finished
+            "finished": self.finished,
+            "lesson_blocks": [block.convert_json(self.student_id) for block in self.lesson.blocks]
+        }
 
+    def add_commit(self):
+        db.session.add(self)
+        db.session.commit()
+
+
+class StudentExercise(db.Model):
+    __tablename__ = "student_exercise"
+    id = Column(Integer, primary_key=True)
+    student_id = Column(Integer, ForeignKey("student.id"))
+    lesson_id = Column(Integer, ForeignKey("lesson.id"))
+    level_id = Column(Integer, ForeignKey("subject_level.id"))
+    type_id = Column(Integer, ForeignKey("exercise_types.id"))
+    subject_id = Column(Integer, ForeignKey("subject.id"))
+    exercise_id = Column(Integer, ForeignKey("exercise.id"))
+    boolean = Column(Boolean)
+    block_id = Column(Integer, ForeignKey('exercise_block.id'))
+    answer_id = Column(Integer, ForeignKey('exercise_answers.id'))
+    value = Column(JSON())
+    student_chapter_id = Column(Integer, ForeignKey('student_chapter.id'))
+    chapter_id = Column(Integer, ForeignKey('chapter.id'))
+    student_lesson_id = Column(Integer, ForeignKey('student_lesson.id'))
+    student_lesson_archive_id = Column(Integer, ForeignKey('student_lesson_archive.id'))
+
+    def convert_json(self, entire=False):
+        student_exercise_blocks = StudentExerciseBlock.query.filter(
+            StudentExerciseBlock.student_id == self.student_id,
+            StudentExerciseBlock.exercise_id == self.exercise_id).join(StudentExerciseBlock.exercise_block).order_by(
+            ExerciseBlock.order).all()
+        exercise_block = ExerciseBlock.query.filter()
+        return {
+            "id": self.id,
+            "name": self.exercise.name,
+            "status": self.boolean,
+            "block_index": self.exercise_block.order,
+            "blocks": [block.convert_json() for block in student_exercise_blocks]
+        }
+
+    def add_commit(self):
+        db.session.add(self)
+        db.session.commit()
+
+    def delete_commit(self):
+        db.session.delete(self)
+        db.session.commit()
+
+
+class StudentExerciseBlock(db.Model):
+    __tablename__ = "student_exercise_block"
+    id = Column(Integer, primary_key=True)
+    exercise_id = Column(Integer, ForeignKey('exercise.id'))
+    block_id = Column(Integer, ForeignKey('exercise_block.id'))
+    clone = Column(JSON())
+    student_id = Column(Integer, ForeignKey('student.id'))
+    lesson_id = Column(Integer, ForeignKey("lesson.id"))
+    chapter_id = Column(Integer, ForeignKey('chapter.id'))
+    student_lesson_archive_id = Column(Integer, ForeignKey('student_lesson_archive.id'))
+
+    def convert_json(self, entire=False):
+        return {
+            "id": self.id,
+            "desc": self.exercise_block.desc,
+            "clone": self.exercise_block.clone,
+            "type": self.exercise_block.component.name if self.exercise_block.component else None,
+            "img": self.exercise_block.img.url if self.exercise_block.img else "",
+            "audio": self.exercise_block.audio.url if self.exercise_block.audio else "",
+            # "answers": [answer.convert_json() for answer in self.exercise_answers],
+            "innerType": self.exercise_block.inner_type,
+            "words_clone": self.exercise_block.for_words
         }
 
     def add_commit(self):
@@ -548,75 +563,6 @@ class StudentLessonArchive(db.Model):
             "status": self.status,
             "id": self.id
         }
-
-    def add_commit(self):
-        db.session.add(self)
-        db.session.commit()
-
-
-class StudentExerciseBlock(db.Model):
-    __tablename__ = "student_exercise_block"
-    id = Column(Integer, primary_key=True)
-    exercise_id = Column(Integer, ForeignKey('exercise.id'))
-    block_id = Column(Integer, ForeignKey('exercise_block.id'))
-    clone = Column(JSON())
-    student_id = Column(Integer, ForeignKey('student.id'))
-    lesson_id = Column(Integer, ForeignKey("lesson.id"))
-    chapter_id = Column(Integer, ForeignKey('chapter.id'))
-    student_lesson_archive_id = Column(Integer, ForeignKey('student_lesson_archive.id'))
-
-    def convert_json(self, entire=False):
-        ex_block = {
-            "id": self.exercise_block.id,
-            "answers": [],
-            'innerType': self.exercise_block.inner_type,
-            "clone": self.exercise_block.clone,
-            "type": self.exercise_block.component.name,
-            "img": "",
-            "audio_url": self.exercise_block.audio.url if self.exercise_block.audio else "",
-            "desc": self.exercise_block.desc,
-            "words_img": [],
-            'isAnswered': False,
-            "words_clone": self.exercise_block.for_words
-
-        }
-        block_images = ExerciseBlockImages.query.filter(
-            ExerciseBlockImages.block_id == self.exercise_block.id).order_by(ExerciseBlockImages.id).all()
-        for img in block_images:
-            info_img = {
-                "id": img.file.id,
-                "img": img.file.url,
-                "order": img.order,
-                "type": img.type_image
-            }
-            ex_block['words_img'].append(info_img)
-        if self.exercise_block.img:
-            ex_block['img'] = self.exercise_block.img.url
-
-        student_exercise = StudentExercise.query.filter(
-            StudentExercise.block_id == self.exercise_block.id,
-            StudentExercise.exercise_id == self.exercise_block.exercise_id,
-            StudentExercise.student_id == self.student_id,
-            StudentExercise.student_lesson_archive_id == self.student_lesson_archive_id).order_by(
-            StudentExercise.id).all()
-
-        for exe in student_exercise:
-            info_answer = {
-                "id": exe.id,
-                "desc": exe.exercise_answer.desc,
-                "order": exe.exercise_answer.order,
-                "img": None,
-                "block_id": exe.exercise_answer.block_id,
-                "type_img": exe.exercise_answer.type_img,
-                'status': exe.boolean,
-                'value': exe.value,
-
-            }
-            if exe.exercise_answer.file:
-                info_answer['img'] = exe.exercise_answer.file.url
-            ex_block['isAnswered'] = True
-            ex_block['answers'].append(info_answer)
-        return ex_block
 
     def add_commit(self):
         db.session.add(self)

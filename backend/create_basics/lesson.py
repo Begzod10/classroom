@@ -86,7 +86,7 @@ def info(pk):
         return del_msg("Lesson", status=True, data=lesson.convert_json())
 
 
-@lesson_bp.route(f'/profile/<chapter_id>/<order>', methods=['POST', 'GET', 'DELETE'])
+@lesson_bp.route(f'/profile/<chapter_id>/<order>/', methods=['POST', 'GET', 'DELETE'])
 @jwt_required()
 @swag_from({
     'tags': ['Lesson'],
@@ -126,9 +126,7 @@ def profile(chapter_id, order):
                 StudentLessonArchive.status == False, StudentLessonArchive.lesson_id == lesson_id).first()
 
             return jsonify({
-                "data": student_lesson.convert_json(entire=True,
-                                                    student_lesson_archive_id=student_lesson_archive.id) if student_lesson_archive else lesson.convert_json(
-                    entire=True),
+                "data": student_lesson.convert_json(),
                 "length": len(lessons),
                 'lesson_id': student_lesson.id,
                 "next": next_order,
