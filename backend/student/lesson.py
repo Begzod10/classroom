@@ -118,7 +118,7 @@ def student_lesson_complete():
             ).add_commit()
 
         # === CASE 1: variant-based question ===
-        if answer['type'] == "question" and answer['innerType'] in ["text", "image", "imageInText"]:
+        if answer['type'] == "question" and answer['innerType'] in ["text", "image"]:
             exercise_answer = ExerciseAnswers.query.filter_by(
                 block_id=block.id,
                 status=True
@@ -182,16 +182,16 @@ def student_lesson_complete():
     update_student_datas(student, lesson_id)
     update_ratings(student, lesson_id)
 
-    exercise_blocks = StudentExerciseBlock.query.filter_by(
-        lesson_id=lesson_id,
-        student_id=student.id,
-        exercise_id=exercise_id,
-        student_lesson_archive_id=student_lesson_archive.id
-    ).order_by(StudentExerciseBlock.id).all()
+    # exercise_blocks = StudentExerciseBlock.query.filter_by(
+    #     lesson_id=lesson_id,
+    #     student_id=student.id,
+    #     exercise_id=exercise_id,
+    #     student_lesson_archive_id=student_lesson_archive.id
+    # ).order_by(StudentExerciseBlock.id).all()
 
     return jsonify({
         "success": True,
-        "block": iterate_models(exercise_blocks),
+        "student_lesson": student_lesson.convert_json(),
         "archive_id": student_lesson_archive.id
     })
 

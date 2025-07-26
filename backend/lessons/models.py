@@ -218,10 +218,10 @@ class LessonBlock(db.Model):
     inner_type = Column(String)
 
     def convert_json(self, student_id=None):
-        student_exercise = StudentExercise.query.filter(
-            StudentExercise.student_id == student_id,
-            StudentExercise.exercise_id == self.exercise_id
-        ).first()
+        student_exercise_block = StudentExerciseBlock.query.filter(
+            StudentExerciseBlock.student_id == student_id,
+            StudentExerciseBlock.exercise_id == self.exercise_id
+        ).join(StudentExerciseBlock.exercise_block).order_by(ExerciseBlock.order).all()
 
         exercise = Exercise.query.filter(Exercise.id == self.exercise_id).first()
 
@@ -237,8 +237,8 @@ class LessonBlock(db.Model):
             "clone": self.clone,
             "type_block": self.type_block,
             "order": self.order,
-            "exercise": exercise.convert_json() if exercise else None,
-            "student_exercise": student_exercise.convert_json() if student_exercise else None,
+            "exercise": exercise.convert_json(student_id) if exercise else None,
+
             "inner_type": self.inner_type,
         }
 
@@ -317,7 +317,7 @@ class Exercise(db.Model):
         db.session.add(self)
         db.session.commit()
 
-    def convert_json(self, entire=False):
+    def convert_json(self, student_id=None):
         info = {
             "id": self.id,
             "name": self.name,
@@ -336,7 +336,7 @@ class Exercise(db.Model):
                 "name": self.subject_level.name if self.subject_level else None
             },
             "random": self.random_status,
-            "blocks": [block.convert_json() for block in self.block]
+            "blocks": [block.convert_json(student_id) for block in self.block]
         }
 
         return info
@@ -364,7 +364,7 @@ class ExerciseBlock(db.Model):
     order = Column(Integer)
     for_words = Column(JSON())
 
-    def convert_json(self, entire=False):
+    def convert_json(self, student_id=None):
         return {
             "id": self.id,
             "desc": self.desc,
@@ -372,7 +372,7 @@ class ExerciseBlock(db.Model):
             "type": self.component.name if self.component else None,
             "img": self.img.url if self.img else "",
             "audio": self.audio.url if self.audio else "",
-            "answers": [answer.convert_json() for answer in self.exercise_answers],
+            "answers": [answer.convert_json(student_id) for answer in self.exercise_answers],
             "innerType": self.inner_type,
             "words_clone": self.for_words
         }
@@ -407,14 +407,18 @@ class ExerciseAnswers(db.Model):
     type_img = Column(String)
     student_exercise = relationship("StudentExercise", backref="exercise_answer", order_by="StudentExercise.id")
 
-    def convert_json(self):
+    def convert_json(self, student_id=None):
+        student_exercise = StudentExercise.query.filter(StudentExercise.student_id == student_id,
+                                                        StudentExercise.block_id == self.block_id,
+                                                        StudentExercise.answer_id == self.id).first()
         return {
             "id": self.id,
             "img": self.file.url if self.file else None,
             "desc": self.desc,
             "status": self.status,
             "type_img": self.type_img,
-            "order": self.order
+            "order": self.order,
+            "student_exercise": student_exercise.convert_json() if student_exercise else None
         }
 
     def add_commit(self):
@@ -505,7 +509,7 @@ class StudentExercise(db.Model):
             "name": self.exercise.name,
             "status": self.boolean,
             "block_index": self.exercise_block.order,
-            "blocks": [block.convert_json() for block in student_exercise_blocks]
+            "desc": self.exercise_answer.desc
         }
 
     def add_commit(self):
@@ -528,7 +532,10 @@ class StudentExerciseBlock(db.Model):
     chapter_id = Column(Integer, ForeignKey('chapter.id'))
     student_lesson_archive_id = Column(Integer, ForeignKey('student_lesson_archive.id'))
 
-    def convert_json(self, entire=False):
+    def convert_json(self, student_id=None):
+        student_exercise = StudentExercise.query.filter(StudentExercise.exercise_id == self.exercise_id,
+                                                        StudentExercise.block_id == self.block_id,
+                                                        StudentExercise.student_id == student_id).first()
         return {
             "id": self.id,
             "desc": self.exercise_block.desc,
@@ -536,6 +543,9 @@ class StudentExerciseBlock(db.Model):
             "type": self.exercise_block.component.name if self.exercise_block.component else None,
             "img": self.exercise_block.img.url if self.exercise_block.img else "",
             "audio": self.exercise_block.audio.url if self.exercise_block.audio else "",
+            "status": student_exercise.boolean if student_exercise else None,
+            "block_id": self.exercise_block.id,
+            "value": student_exercise.value if student_exercise else None,
             # "answers": [answer.convert_json() for answer in self.exercise_answers],
             "innerType": self.exercise_block.inner_type,
             "words_clone": self.exercise_block.for_words
