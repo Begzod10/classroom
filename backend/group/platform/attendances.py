@@ -25,6 +25,17 @@ def make_attendance_classroom():
         return jsonify(response.json())
 
 
+@app.route(f'{api}/make_attendance_classroom_mobile', methods=['POST'])
+@jwt_required()
+def make_attendance_classroom_mobile():
+    indentity = get_jwt_identity()
+    user = User.query.filter(User.classroom_user_id == indentity).first()
+    if user.system_name == "gennis":
+        response = requests.post(f"{gennis_server_url}/api/make_attendance_classroom_mobile",
+                                 json=request.get_json())
+        return jsonify(response.json())
+
+
 @app.route(f'{api}/delete_attendance_classroom/<int:attendance_id>/<int:student_id>/<int:group_id>', methods=['GET'])
 @jwt_required()
 def delete_attendance_classroom(attendance_id, student_id, group_id):

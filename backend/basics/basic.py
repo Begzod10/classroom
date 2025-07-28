@@ -35,17 +35,19 @@ def login():
                 "password": password,
             })
             user_get = response.json()['user'] if 'user' in response.json() else {}
-            location = response.json()['location']
-            exist_location = Location.query.filter(Location.platform_id == location['value']).first()
-            if not exist_location:
-                exist_location = Location(name=location['name'], platform_id=location['value'])
-                exist_location.add_commit()
+            location = response.json()['location'] if 'location' in response.json() else {}
+            if location:
+                exist_location = Location.query.filter(Location.platform_id == location['value']).first()
+                if not exist_location:
+                    exist_location = Location(name=location['name'], platform_id=location['value'])
+                    exist_location.add_commit()
+                user.location_id = exist_location.id if exist_location else None
+                db.session.commit()
             if not user_get:
                 return {"msg": "Username yoki parol noto'g'ri", "success": False}, 200
             if not user:
                 user = check_user_gennis(user_get)
-            user.location_id = exist_location.id
-            db.session.commit()
+
             if user_get['parent']:
                 pprint(user_get)
                 check_user_gennis(user_get)
@@ -82,17 +84,20 @@ def login():
                 "data": {
                     "info": user.convert_json(),
                     "access_token": create_access_token(identity=user.classroom_user_id),
-                    "refresh_token": create_refresh_token(identity=user.classroom_user_id)
+                    "refresh_token": create_refresh_token(identity=user.classroom_user_id),
+                    "parent": user.parent.convert_json() if user.parent else None
                 }
             })
         else:
             return {"msg": "Username yoki parol noto'g'ri", "success": False}, 200
     # print(user.parent.student_get)
+
     return jsonify({
         "data": {
             "info": user.convert_json(),
             "access_token": create_access_token(identity=user.classroom_user_id),
-            "refresh_token": create_refresh_token(identity=user.classroom_user_id)
+            "refresh_token": create_refresh_token(identity=user.classroom_user_id),
+            "parent": user.parent.convert_json() if user.parent else None
         }
     })
 

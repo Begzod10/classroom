@@ -37,7 +37,6 @@ def chapters_info(level_id):
     else:
         chapters = Chapter.query.filter(Chapter.level_id == level_id).order_by(
             Chapter.order).all()
-        print(user.student)
         if user.student:
             chapters = Chapter.query.filter(Chapter.level_id == level_id, Chapter.status == True).order_by(
                 Chapter.order).all()

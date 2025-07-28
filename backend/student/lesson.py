@@ -170,7 +170,8 @@ def student_lesson_complete():
                         block_id=block.id,
                         desc=ans['text'][0]
                     ).first()
-                    is_correct = ans['text'] == ans['value']
+
+                    is_correct = ans['text'][0] == ans['value']
                     saved = save_student_exercise(
                         student, lesson, exercise, block,
                         ans, exercise_answer, is_correct,
@@ -181,22 +182,15 @@ def student_lesson_complete():
 
     update_student_datas(student, lesson_id)
     update_ratings(student, lesson_id)
-
-    # exercise_blocks = StudentExerciseBlock.query.filter_by(
-    #     lesson_id=lesson_id,
-    #     student_id=student.id,
-    #     exercise_id=exercise_id,
-    #     student_lesson_archive_id=student_lesson_archive.id
-    # ).order_by(StudentExerciseBlock.id).all()
-
+    exercise_blocks = ExerciseBlock.query.filter(ExerciseBlock.id.in_([answer['id'] for answer in answers])).all()
     return jsonify({
         "success": True,
-        "student_lesson": student_lesson.convert_json(),
+        "blocks": [block.convert_json(student.id, lesson_id) for block in exercise_blocks],
         "archive_id": student_lesson_archive.id
     })
 
 
-@student_lesson_bp.route(f'/reset/<archive_id>')
+@student_lesson_bp.route(f'/lesson/reset/<archive_id>/')
 @jwt_required()
 def reset_lesson(archive_id):
     student_lesson_archive = StudentLessonArchive.query.filter(StudentLessonArchive.id == archive_id).first()

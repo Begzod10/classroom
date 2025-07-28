@@ -1,9 +1,15 @@
-from app import api, app, request, jsonify, db, contains_eager, or_
+from flask import Blueprint
+
+from app import request, jsonify, db
 from backend.models.basic_model import Teacher, User
-from backend.models.settings import iterate_models
+
+teacher_blueprint = Blueprint('teacher', __name__)
+from flasgger import swag_from
 
 
-@app.route(f'{api}/update_teacher_balance/<user_id>/<system_name>', methods=['POST'])
+@teacher_blueprint.route('/update_teacher_balance/<user_id>/<system_name>', methods=['POST'])
+@swag_from({'tags': ['Teacher'], "methods": ["POST"]})
+# @app.route(f'{api}/update_teacher_balance/<user_id>/<system_name>', methods=['POST'])
 def update_teacher_balance(user_id, system_name):
     if system_name == "gennis":
         user = User.query.filter(User.platform_id == user_id).first()

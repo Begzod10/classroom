@@ -126,7 +126,7 @@ def profile(chapter_id, order):
                 StudentLessonArchive.status == False, StudentLessonArchive.lesson_id == lesson_id).first()
 
             return jsonify({
-                "data": student_lesson.convert_json(),
+                "data": student_lesson.convert_json(lesson_id),
                 "length": len(lessons),
                 'lesson_id': student_lesson.id,
                 "next": next_order,

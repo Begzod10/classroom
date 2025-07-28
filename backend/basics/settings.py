@@ -2,15 +2,13 @@ import os
 from werkzeug.utils import secure_filename
 from backend.models.basic_model import User
 from backend.pisa.api.utils import generate_unique_filename
-# from app import *
+from dotenv import load_dotenv
 
-# from .views import *
 import uuid
 
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
 
-# gennis_server_url = "http://192.168.1.19:5002"
-gennis_server_url = os.getenv('GENNIS_SERVER_URL')
+
 
 
 def check_file(filename):

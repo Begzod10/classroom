@@ -1,7 +1,7 @@
 import requests
 from flask import Blueprint
 
-from app import jsonify, jwt_required, get_jwt_identity
+from app import api, jsonify, jwt_required, get_jwt_identity
 from backend.configs import gennis_server_url, turon_server_url
 from backend.models.basic_model import User, Student, Teacher, Group
 

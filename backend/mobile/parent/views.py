@@ -1,5 +1,5 @@
 from app import api, app, cross_origin, db, request, jsonify
-from backend.basics.settings import gennis_server_url
+from backend.configs import gennis_server_url
 import requests
 from backend.parent.models import Parent
 from backend.models.basic_model import User, Role
