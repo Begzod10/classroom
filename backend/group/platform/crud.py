@@ -1,8 +1,15 @@
-from app import api, app, request, jsonify, db, contains_eager
+from flasgger import swag_from
+from flask import Blueprint
+
+from app import jsonify, db, contains_eager
 from backend.models.basic_model import Group, Student, Teacher, User
 
+group_bp = Blueprint('group_bp', __name__)
 
-@app.route(f'{api}/delete_student_from_group/<user_id>/<group_id>/<system_name>', methods=['DELETE'])
+
+@group_bp.route('/delete_student_from_group/<user_id>/<group_id>/<system_name>', methods=['DELETE'])
+# @app.route(f'{api}/delete_student_from_group/<user_id>/<group_id>/<system_name>', methods=['DELETE'])
+@swag_from({'tags': ['Group'], "methods": ["DELETE"]})
 def delete_student_from_group(user_id, group_id, system_name):
     if system_name == "gennis":
         user = User.query.filter(User.platform_id == user_id).first()
@@ -16,7 +23,9 @@ def delete_student_from_group(user_id, group_id, system_name):
     return jsonify({"msg": "O'chirildi"})
 
 
-@app.route(f'{api}/delete_teacher_from_group/<user_id>/<group_id>/<system_name>', methods=['DELETE'])
+@group_bp.route('/delete_teacher_from_group/<user_id>/<group_id>/<system_name>', methods=['DELETE'])
+# @app.route(f'{api}/delete_teacher_from_group/<user_id>/<group_id>/<system_name>', methods=['DELETE'])
+@swag_from({'tags': ['Group'], "methods": ["DELETE"]})
 def delete_teacher_from_group(user_id, group_id, system_name):
     if system_name == "gennis":
         user = User.query.filter(User.platform_id == user_id).first()
@@ -30,7 +39,9 @@ def delete_teacher_from_group(user_id, group_id, system_name):
     return jsonify({"msg": "O'chirildi"})
 
 
-@app.route(f'{api}/delete_group/<group_id>/<system_name>', methods=['DELETE'])
+@group_bp.route('/delete_group/<group_id>/<system_name>', methods=['DELETE'])
+@swag_from({'tags': ['Group'], "methods": ["DELETE"]})
+# @app.route(f'{api}/delete_group/<group_id>/<system_name>', methods=['DELETE'])
 def delete_group(group_id, system_name):
     if system_name == "gennis":
         group = Group.query.filter(Group.platform_id == group_id).first()

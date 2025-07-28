@@ -1,16 +1,19 @@
-import pprint
-
-from app import api, app, request, jsonify, db, jwt_required
-from backend.configs import gennis_server_url
-from backend.models.basic_model import Teacher, User, Group
 import requests
-
+from flasgger import swag_from
+from flask import Blueprint
 # --- external_server.py ---
 from flask import request, jsonify
-import requests
+
+from app import jwt_required
+from backend.configs import gennis_server_url
+from backend.models.basic_model import Group
+
+external_bp = Blueprint('external_bp', __name__)
 
 
-@app.route(f'{api}/create_test/<int:group_id>', methods=["PUT", "POST", "DELETE"])
+@external_bp.route('/create_test/<int:group_id>', methods=["PUT", "POST", "DELETE"])
+@swag_from({'tags': ['Group'], "methods": ["PUT", "POST", "DELETE"]})
+# @app.route(f'{api}/create_test/<int:group_id>', methods=["PUT", "POST", "DELETE"])
 def create_test(group_id):
     group = Group.query.filter(Group.id == group_id).first()
     if not group or not group.platform_id:
@@ -48,7 +51,9 @@ def create_test(group_id):
     return jsonify(response.json())
 
 
-@app.route(f'{api}/filter_test_datas/<int:group_id>', methods=["GET", "POST"])
+@external_bp.route('/filter_test_datas/<int:group_id>', methods=["GET", "POST"])
+@swag_from({'tags': ['Group'], "methods": ["GET", "POST"]})
+# @app.route(f'{api}/filter_test_datas/<int:group_id>', methods=["GET", "POST"])
 @jwt_required()
 def filter_datas_in_group(group_id):
     group = Group.query.filter(Group.id == group_id).first()
@@ -62,7 +67,9 @@ def filter_datas_in_group(group_id):
         return jsonify(response.json())
 
 
-@app.route(f'{api}/filter_test_group/<int:group_id>', methods=['POST'])
+@external_bp.route('/filter_test_group/<int:group_id>', methods=['POST'])
+@swag_from({'tags': ['Group'], "methods": ["POST"]})
+# @app.route(f'{api}/filter_test_group/<int:group_id>', methods=['POST'])
 @jwt_required()
 def filter_test_group(group_id):
     group = Group.query.filter(Group.id == group_id).first()
@@ -72,7 +79,9 @@ def filter_test_group(group_id):
         return jsonify(response.json())
 
 
-@app.route(f'{api}/submit_test_group/<int:group_id>', methods=["POST"])
+@external_bp.route('/submit_test_group/<int:group_id>', methods=["POST"])
+@swag_from({'tags': ['Group'], "methods": ["POST"]})
+# @app.route(f'{api}/submit_test_group/<int:group_id>', methods=["POST"])
 @jwt_required()
 def submit_test_group(group_id):
     group = Group.query.filter(Group.id == group_id).first()

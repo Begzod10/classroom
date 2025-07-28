@@ -1,21 +1,22 @@
-from app import app, api, cross_origin, db, contains_eager, request, or_, jsonify
+import requests
+from flasgger import swag_from
+from flask import Blueprint
+from flask_jwt_extended import get_jwt_identity, jwt_required
+
+from app import cross_origin, db, contains_eager, request, or_, jsonify
 from backend.configs import gennis_server_url
 from backend.models.basic_model import Student, StudentLevel, Teacher, Group, SubjectLevel, User, StudentSubject, \
-    Location, Role, Subject, Chapter, StudentChapter, StudentLesson
-from flask_jwt_extended import get_jwt_identity, jwt_required
-from backend.models.settings import iterate_models, check_exist_id
-from pprint import pprint
-import requests
-from backend.basics.utils import check_group_info
-import uuid
-from sqlalchemy.exc import IntegrityError, PendingRollbackError
-import hashlib
+    Chapter, StudentChapter, StudentLesson
+from backend.models.settings import iterate_models
+
+group_bps = Blueprint('group_bps', __name__)
 
 
 # from backend.basics.settings import
 
-
-@app.route(f'{api}/get_groups')
+@group_bps.route('/get_groups')
+@swag_from({'tags': ['Group'], "methods": ["GET"]})
+# @app.route(f'{api}/get_groups')
 @cross_origin()
 @jwt_required()
 def get_groups():
@@ -49,7 +50,9 @@ def get_groups():
     return iterate_models(groups)
 
 
-@app.route(f'{api}/group_observer/<group_id>')
+@group_bps.route('/group_observer/<group_id>')
+@swag_from({'tags': ['Group'], "methods": ["GET"]})
+# @app.route(f'{api}/group_observer/<group_id>')
 @jwt_required()
 def group_observer(group_id):
     identity = get_jwt_identity()
@@ -64,7 +67,9 @@ def group_observer(group_id):
     })
 
 
-@app.route(f'{api}/group_profile2/<int:group_id>')
+@group_bps.route('/group_profile2/<int:group_id>')
+@swag_from({'tags': ['Group'], "methods": ["GET"]})
+# @app.route(f'{api}/group_profile2/<int:group_id>')
 @jwt_required()
 def group_profile(group_id):
     identity = get_jwt_identity()
@@ -147,7 +152,9 @@ def group_profile(group_id):
     })
 
 
-@app.route(f'{api}/set_observer/<int:user_id>/<system_name>')
+@group_bps.route('/set_observer/<int:user_id>/<system_name>')
+@swag_from({'tags': ['Group'], "methods": ["GET"]})
+# @app.route(f'{api}/set_observer/<int:user_id>/<system_name>')
 def set_observer(user_id, system_name):
     if system_name == "gennis":
         user = User.query.filter(User.platform_id == user_id).first()
@@ -165,7 +172,9 @@ def set_observer(user_id, system_name):
     })
 
 
-@app.route(f'{api}/check_level/<group_id>/<level_id>', methods=['POST', 'GET'])
+@group_bps.route('/check_level/<group_id>/<level_id>', methods=['POST', 'GET'])
+@swag_from({'tags': ['Group'], "methods": ["GET", "POST"]})
+# @app.route(f'{api}/check_level/<group_id>/<level_id>', methods=['POST', 'GET'])
 def check_level(group_id, level_id):
     subject_level = SubjectLevel.query.filter(SubjectLevel.id == level_id).first()
     if request.method == "POST":
