@@ -1,9 +1,14 @@
-from app import api, app, request, jsonify, db, jwt_required, get_jwt_identity, gennis_server_url
+from app import request, jsonify, db, jwt_required
 from backend.models.basic_model import Student, User
 import requests
+from flask import Blueprint
+from backend.configs import gennis_server_url, turon_server_url
+from flask_jwt_extended import get_jwt_identity
+
+payment_bp = Blueprint('payment', __name__)
 
 
-@app.route(f'{api}/student_attendance_info')
+@payment_bp.route(f'/student_attendance_info')
 @jwt_required()
 def student_attendance_info():
     user = User.query.filter(User.classroom_user_id == get_jwt_identity()).first()

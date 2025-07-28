@@ -1,9 +1,13 @@
-from app import api, app, request, jsonify, db, jwt_required, get_jwt_identity, gennis_server_url, turon_server_url
+from app import request, jsonify, db, jwt_required, get_jwt_identity
 from backend.models.basic_model import Student, User
 import requests
+from flask import Blueprint
+from backend.configs import gennis_server_url, turon_server_url
+
+attendance_per_month_bp = Blueprint('attendance_per_month', __name__)
 
 
-@app.route(f'{api}/attendance_per_month_list/<int:student_id>', methods=['GET'])
+@attendance_per_month_bp.route(f'/attendance_per_month_list/<int:student_id>', methods=['GET'])
 @jwt_required()
 def attendance_per_month_list(student_id):
     identity = get_jwt_identity()
@@ -18,7 +22,7 @@ def attendance_per_month_list(student_id):
         )
 
 
-@app.route(f'{api}/student_group_dates/<int:student_id>', methods=['GET', 'POST'])
+@attendance_per_month_bp.route(f'/student_group_dates/<int:student_id>', methods=['GET', 'POST'])
 @jwt_required()
 def student_group_dates(student_id):
     identity = get_jwt_identity()
@@ -29,7 +33,7 @@ def student_group_dates(student_id):
         return jsonify(response.json())
 
 
-@app.route(f'{api}/combined_attendances2/<int:student_id>', methods=['GET', 'POST'])
+@attendance_per_month_bp.route(f'/combined_attendances2/<int:student_id>', methods=['GET', 'POST'])
 @jwt_required()
 def combined_attendances2(student_id):
     identity = get_jwt_identity()

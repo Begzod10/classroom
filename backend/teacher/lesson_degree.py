@@ -35,7 +35,6 @@ def group_degree():
 
     student_ids = [s.id for s in students]
     chapters_list = []
-    pprint.pprint(data)
 
     def get_exercise_blocks(level_id, exercise_ids):
         return ExerciseBlock.query.join(ExerciseBlock.exercise).options(
@@ -48,7 +47,7 @@ def group_degree():
         ).all()
 
     if not chapter_id and not lesson_id:
-        print('1')
+
         chapters = Chapter.query.filter_by(level_id=level.id).order_by(Chapter.order).all()
 
         for chapter in chapters:
@@ -160,7 +159,7 @@ def group_degree():
         return jsonify({"data": {"all_chapters": len(chapters), "chapters_list": chapters_list}})
 
     elif chapter_id and not lesson_id:
-        print('2')
+
         chapter = Chapter.query.get(chapter_id)
         all_lessons = Lesson.query.filter_by(chapter_id=chapter.id).order_by(Lesson.order).all()
 
@@ -209,7 +208,7 @@ def group_degree():
         return jsonify({"data": {"lesson_list": chapters_list}})
 
     else:
-        print('3')
+
         student_lessons = StudentLesson.query.filter(
             StudentLesson.lesson_id == lesson_id,
             StudentLesson.student_id.in_(student_ids)
@@ -231,27 +230,24 @@ def group_degree():
 
 @lesson_degree.route('/student_exercise_block/<lesson_id>/<student_id>', methods=['POST', 'GET'])
 @swag_from({"tags": ["Lesson_degree"]}, methods=['POST'])
-# @app.route(f'{api}/student_exercise_block/<lesson_id>/<student_id>')
 def student_exercise_block(lesson_id, student_id):
-    lesson = StudentLesson.query.filter(StudentLesson.lesson_id == lesson_id,
-                                        StudentLesson.student_id == student_id).first()
-    exercise_block = StudentExerciseBlock.query.filter(StudentExerciseBlock.lesson_id == lesson_id,
-                                                       StudentExerciseBlock.student_id == student_id,
-                                                       ).order_by(
-        StudentExerciseBlock.id).all()
+    lesson = Lesson.query.get(lesson_id)
+    student_lesson = StudentLesson.query.filter_by(lesson_id=lesson_id, student_id=student_id).first()
     student_exercises = StudentExercise.query.filter(StudentExercise.lesson_id == lesson_id,
-                                                     StudentExercise.student_id == student_id).first()
-    student_lesson_archive = StudentLessonArchive.query.filter(
-        StudentLessonArchive.student_lesson == lesson.id, StudentLessonArchive.student_id == student_id,
-        StudentLessonArchive.status == False, StudentLessonArchive.lesson_id == lesson_id).first()
-
-    data = lesson.degree_convert("exc",
-                                 student_lesson_archive_id=student_lesson_archive.id) if student_exercises else ""
+                                                     StudentExercise.student_id == student_id).all()
+    exercise_block = Exercise.query.filter(Exercise.id.in_(
+        [e.exercise_id for e in student_exercises])).order_by(
+        Exercise.id).all()
 
     return jsonify({
         "data": {
+            "lesson": {
+                "id": lesson.id,
+                "name": lesson.name,
+                "order": lesson.order
+            },
+            "exercises": [b.convert_json(student_id, lesson_id) for b in exercise_block],
+            "student_lesson": student_lesson.convert_json(lesson_id)
 
-            "lesson": data,
-            "blocks": [b.convert_json() for b in exercise_block]
         }
     })
