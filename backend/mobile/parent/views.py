@@ -9,9 +9,9 @@ from flask import Blueprint
 get_mobile_parent_bp = Blueprint('parent_get', __name__)
 
 
-@get_mobile_parent_bp.route('/student_group_list/<username>', methods=['GET'])
-def mobile_student_group_list(username):
-    response = requests.get(f"{gennis_server_url}/api/mobile/student_group_list/{username}",
+@get_mobile_parent_bp.route('/student_group_list/<int:id>', methods=['GET'])
+def mobile_student_group_list(id):
+    response = requests.get(f"{gennis_server_url}/api/mobile/student_group_list/{id}",
                             headers={
                                 'Content-Type': 'application/json'
                             })
@@ -19,10 +19,10 @@ def mobile_student_group_list(username):
     return jsonify(group_response)
 
 
-@get_mobile_parent_bp.route('/student_attendance/<username>/<group_id>/<year>/<month>', methods=['GET'])
-def mobile_student_attendance(username, group_id, year, month):
+@get_mobile_parent_bp.route('/student_attendance/<int:id>/<group_id>/<year>/<month>', methods=['GET'])
+def mobile_student_attendance(id, group_id, year, month):
     response = requests.get(
-        f"{gennis_server_url}/api/mobile/get_student_attendance_days_list/{username}/{group_id}/{year}/{month}",
+        f"{gennis_server_url}/api/mobile/get_student_attendance_days_list/{id}/{group_id}/{year}/{month}",
         headers={
             'Content-Type': 'application/json'
         })
@@ -30,10 +30,10 @@ def mobile_student_attendance(username, group_id, year, month):
     return jsonify(group_response)
 
 
-@get_mobile_parent_bp.route('/get_student_ranking/<username>/<group_id>/<year>/<month>', methods=['GET'])
-def get_student_ranking(username, group_id, year, month):
+@get_mobile_parent_bp.route('/get_student_ranking/<int:id>/<group_id>/<year>/<month>', methods=['GET'])
+def get_student_ranking(id, group_id, year, month):
     response = requests.get(
-        f"{gennis_server_url}/api/mobile/get_student_ranking/{username}/{group_id}/{year}/{month}",
+        f"{gennis_server_url}/api/mobile/get_student_ranking/{id}/{group_id}/{year}/{month}",
         headers={
             'Content-Type': 'application/json'
         })
@@ -63,9 +63,9 @@ def get_lesson_plan_list(id):
     return jsonify(group_response)
 
 
-@get_mobile_parent_bp.route('/student_profile/<username>', methods=['GET', 'PUT'])
-def student_profile(username):
-    user = User.query.filter_by(username=username).first()
+@get_mobile_parent_bp.route('/student_profile/<int:id>', methods=['GET', 'PUT'])
+def student_profile(id):
+    user = User.query.filter_by(platform_id=id).first()
 
     if request.method == "GET":
         day = str(user.born_day).zfill(2)
@@ -102,7 +102,7 @@ def student_profile(username):
         db.session.commit()
 
         response = requests.put(
-            f"{gennis_server_url}/api/mobile/student_profile_edit/{username}",
+            f"{gennis_server_url}/api/mobile/student_profile_edit/{id}",
             json=data,
             headers={
                 'Content-Type': 'application/json'
