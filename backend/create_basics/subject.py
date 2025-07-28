@@ -76,7 +76,7 @@ def create_subject(subject_id):
     desc = json_file['desc']
     get_img = None
     if photo and check_file(photo.filename):
-        get_img = add_file(photo, "img", current_app, File)
+        get_img = add_file(photo, "img", File)
     if not subject_id:
         add = Subject(name=name, desc=desc, file_id=get_img)
         add.add_commit()
@@ -84,7 +84,7 @@ def create_subject(subject_id):
         get_subject = Subject.query.filter(Subject.id == subject_id).first()
         if photo and check_file(photo.filename):
             check_img_remove(get_subject.file_id, File)
-            get_img = add_file(photo, "img", current_app, File)
+            get_img = add_file(photo, "img", File)
             Subject.query.filter(Subject.id == subject_id).update({
                 "name": name,
                 "desc": desc,

@@ -23,8 +23,10 @@ from backend.parent.views import register_parent_views
 from backend.mobile.parent.urls import register_mobile_parent_views
 from backend.basics.views import register_views
 from backend.student.views import register_student_routes
+from backend.user.views import register_user_view
 
 load_dotenv()
+
 
 def create_app():
     app = Flask(
@@ -58,7 +60,7 @@ def create_app():
     register_mobile_parent_views(api_prefix, app)
     register_student_routes(api_prefix, app)
     register_create_teacher(api_prefix, app)
-
+    register_user_view(api_prefix, app)
 
     app.config.from_mapping(
         CELERY=dict(
@@ -84,16 +86,11 @@ from backend.group.views import *
 # student
 from backend.student.views import *
 
-# user
-from backend.user.views import *
-
 # teacher
 
 # class test
 from backend.class_test.views import *
 
-# mobile
-from backend.mobile.views import *
 
 from backend.models.views import *
 

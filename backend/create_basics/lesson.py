@@ -241,7 +241,7 @@ def lesson_block_image(pk):
         get_json = json.loads(get_json)
         get_img = None
         if 'img' in request.files:
-            get_img = add_file(img, "img", current_app, File)
+            get_img = add_file(img, "img", File)
         if request.method == "POST":
             order = 0
             if LessonBlock.query.filter(LessonBlock.lesson_id == get_json['lesson_id']).all():
@@ -283,7 +283,7 @@ def lesson_block_file(pk):
         get_json = json.loads(get_json)
         get_file = None
         if 'file' in request.files:
-            get_file = add_file(file, "file", current_app, File)
+            get_file = add_file(file, "file", File)
         if request.method == "POST":
             order = 0
             if LessonBlock.query.filter(LessonBlock.lesson_id == get_json['lesson_id']).all():

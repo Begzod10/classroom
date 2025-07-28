@@ -31,7 +31,7 @@ def check_img_remove(img, File):
             os.remove(img_path)
 
 
-def save_img(photo, app, type_file=None):
+def save_img(photo,  type_file=None):
     basedir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 
     symbols = (u"абвгдеёжзийклмнопрстуфхцчшщъыьэюяАБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЫЬЭЮЯ",
@@ -59,8 +59,8 @@ def save_img(photo, app, type_file=None):
     return (photo_url, unique_name, original_name)
 
 
-def add_file(photo, type_file, app, File):
-    photo_url, file_name, original_name = save_img(photo, app, type_file=type_file)
+def add_file(photo, type_file, File):
+    photo_url, file_name, original_name = save_img(photo,  type_file=type_file)
     mb_size = str(define_size(f'frontend/build/{photo_url}'))
 
     img_add = File.query.filter(

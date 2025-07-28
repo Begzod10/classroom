@@ -305,7 +305,7 @@ def block_question(pk):
 
     img_info = None
     if 'img' in request.files:
-        img_info = add_file(request.files['img'], type_file="img", app=current_app, File=File)
+        img_info = add_file(request.files['img'], type_file="img", File=File)
 
     if method == "POST":
         last_block = ExerciseBlock.query.filter_by(exercise_id=exercise.id).order_by(
@@ -364,7 +364,7 @@ def block_question(pk):
                 # New image uploaded — remove old image if any
                 if method == "PUT" and option_index in old_answers and old_answers[option_index].file_id:
                     check_img_remove(old_answers[option_index].file_id, File=File)
-                file_id = add_file(request.files[file_key], type_file="img", app=current_app, File=File)
+                file_id = add_file(request.files[file_key], type_file="img", File=File)
                 type_img = "variant_img"
             elif method == "PUT" and option_index in old_answers:
                 # Reuse old file_id and type_img
@@ -440,7 +440,7 @@ def block_image(pk):
 
         img_info = None
         if 'img' in request.files:
-            img_info = add_file(request.files['img'], type_file="img", app=current_app, File=File)
+            img_info = add_file(request.files['img'], type_file="img", File=File)
         if request.method == "PUT":
             exercise_block = ExerciseBlock.query.get(pk)
             if not exercise_block:
@@ -491,7 +491,7 @@ def block_audio(pk):
 
         audio_info = None
         if 'audio' in request.files:
-            audio_info = add_file(request.files['audio'], type_file="audio", app=current_app, File=File)
+            audio_info = add_file(request.files['audio'], type_file="audio", File=File)
         if request.method == "PUT":
             exercise_block = ExerciseBlock.query.get(pk)
             if not exercise_block:

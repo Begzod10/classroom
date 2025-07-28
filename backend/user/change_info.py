@@ -1,20 +1,25 @@
 import pprint
 
 from backend.models.basic_model import User, File
-from app import api, app, request, jsonify, db, jwt_required, get_jwt_identity, gennis_server_url, turon_server_url
+from app import api, app, request, jsonify, db, jwt_required, get_jwt_identity
 from werkzeug.security import generate_password_hash, check_password_hash
 from backend.basics.settings import create_msg, edit_msg, del_msg, check_file, check_img_remove, add_file
 import requests
+from backend.configs import gennis_server_url, turon_server_url
+from flask import Blueprint
+
+user_bp = Blueprint('user_bp', __name__)
 
 
-@app.route(f'{api}/update_photo', methods=['POST'])
+# @app.route(f'{api}/update_photo', methods=['POST'])
+@user_bp.route(f'/update_photo', methods=['POST'])
 @jwt_required()
 def update_photo():
     indentity = get_jwt_identity()
     user = User.query.filter(User.classroom_user_id == indentity).first()
     photo = request.files.get('file')
     if photo and check_file(photo.filename):
-        get_img = add_file(photo, "image", app, File)
+        get_img = add_file(photo, "img", File)
         check_img_remove(user.file_id, File)
         user.file_id = get_img
         db.session.commit()
@@ -23,7 +28,8 @@ def update_photo():
         return edit_msg(f"Profil rasm", status=False, data=user.convert_json())
 
 
-@app.route(f'{api}/change_pas_user', methods=['POST'])
+# @app.route(f'{api}/change_pas_user', methods=['POST'])
+@user_bp.route(f'/change_pas_user', methods=['POST'])
 @jwt_required()
 def change_pas_user():
     indentity = get_jwt_identity()
@@ -57,7 +63,8 @@ def change_pas_user():
             return jsonify(response.json())
 
 
-@app.route(f'{api}/check_password', methods=['POST'])
+# @app.route(f'{api}/check_password', methods=['POST'])
+@user_bp.route(f'/check_password', methods=['POST'])
 @jwt_required()
 def check_password():
     identity = get_jwt_identity()
@@ -72,7 +79,8 @@ def check_password():
     return jsonify(body)
 
 
-@app.route(f'{api}/check_username', methods=['POST'])
+# @app.route(f'{api}/check_username', methods=['POST'])
+@user_bp.route(f'/check_username', methods=['POST'])
 @jwt_required()
 def check_username():
     indentity = get_jwt_identity()
