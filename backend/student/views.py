@@ -1,7 +1,9 @@
 from .lesson import student_lesson_bp
+
 from .platform.attendance_per_month import attendance_per_month_bp
 
 from .platform.payment import payment_bp
+
 
 
 def register_student_routes(api, app):

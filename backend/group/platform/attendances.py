@@ -1,10 +1,17 @@
-from app import api, app, request, jsonify, db, jwt_required, get_jwt_identity
-from backend.models.basic_model import Teacher, User, Group
 import requests
+from flasgger import swag_from
+from flask import Blueprint
+
+from app import request, jsonify, jwt_required, get_jwt_identity
 from backend.configs import turon_server_url, gennis_server_url
+from backend.models.basic_model import User, Group
+
+attendance_bp = Blueprint('attendance_bp', __name__)
 
 
-@app.route(f'{api}/attendance_classroom/<group_id>')
+@attendance_bp.route('/attendance_classroom/<group_id>')
+@swag_from({'tags': ['Attendance'], "methods": ["GET"]})
+# @app.route(f'{api}/attendance_classroom/<group_id>')
 @jwt_required()
 def attendance_classroom(group_id):
     group = Group.query.filter(Group.id == group_id).first()
@@ -14,7 +21,9 @@ def attendance_classroom(group_id):
     pass
 
 
-@app.route(f'{api}/make_attendance_classroom', methods=['POST'])
+@attendance_bp.route('/make_attendance_classroom', methods=['POST'])
+@swag_from({'tags': ['Attendance'], "methods": ["POST"]})
+# @app.route(f'{api}/make_attendance_classroom', methods=['POST'])
 @jwt_required()
 def make_attendance_classroom():
     indentity = get_jwt_identity()
@@ -25,7 +34,9 @@ def make_attendance_classroom():
         return jsonify(response.json())
 
 
-@app.route(f'{api}/make_attendance_classroom_mobile', methods=['POST'])
+@attendance_bp.route('/make_attendance_classroom_mobile', methods=['POST'])
+@swag_from({'tags': ['Attendance'], "methods": ["POST"]})
+# @app.route(f'{api}/make_attendance_classroom_mobile', methods=['POST'])
 @jwt_required()
 def make_attendance_classroom_mobile():
     indentity = get_jwt_identity()
@@ -36,7 +47,10 @@ def make_attendance_classroom_mobile():
         return jsonify(response.json())
 
 
-@app.route(f'{api}/delete_attendance_classroom/<int:attendance_id>/<int:student_id>/<int:group_id>', methods=['GET'])
+@attendance_bp.route('/delete_attendance_classroom/<int:attendance_id>/<int:student_id>/<int:group_id>',
+                     methods=['GET'])
+@swag_from({'tags': ['Attendance'], "methods": ["GET"]})
+# @app.route(f'{api}/delete_attendance_classroom/<int:attendance_id>/<int:student_id>/<int:group_id>', methods=['GET'])
 @jwt_required()
 def delete_attendance_classroom(attendance_id, student_id, group_id):
     indentity = get_jwt_identity()
@@ -47,7 +61,9 @@ def delete_attendance_classroom(attendance_id, student_id, group_id):
         return jsonify(response.json())
 
 
-@app.route(f'{api}/group_dates2/<int:group_id>')
+@attendance_bp.route('/group_dates2/<int:group_id>')
+@swag_from({'tags': ['Attendance'], "methods": ["GET"]})
+# @app.route(f'{api}/group_dates2/<int:group_id>')
 @jwt_required()
 def group_dates2(group_id):
     group = Group.query.filter(Group.id == group_id).first()
@@ -60,7 +76,9 @@ def group_dates2(group_id):
     pass
 
 
-@app.route(f'{api}/attendances/<group_id>', methods=['GET', 'POST'])
+@attendance_bp.route('/attendances/<group_id>', methods=['GET', 'POST'])
+@swag_from({'tags': ['Attendance'], "methods": ["GET", "POST"]})
+# @app.route(f'{api}/attendances/<group_id>', methods=['GET', 'POST'])
 @jwt_required()
 def attendances(group_id):
     indentity = get_jwt_identity()
@@ -86,7 +104,9 @@ def attendances(group_id):
         return jsonify(response.json())
 
 
-@app.route(f'{api}/group_time_table2/<group_id>')
+@attendance_bp.route('/group_time_table2/<group_id>')
+@swag_from({'tags': ['Attendance'], "methods": ["GET"]})
+# @app.route(f'{api}/group_time_table2/<group_id>')
 @jwt_required()
 def group_time_table(group_id):
     group = Group.query.filter(Group.id == group_id).first()
