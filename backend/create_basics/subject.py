@@ -1,5 +1,6 @@
-from app import cross_origin, db, request, jsonify, or_, contains_eager, current_app
-
+from app import cross_origin, db, request, jsonify, current_app
+from sqlalchemy import or_
+from sqlalchemy.orm import contains_eager
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from backend.models.basic_model import Teacher, File, Group, StudentSubject, Chapter, SubjectLevel, StudentChapter
 from backend.basics.settings import edit_msg, add_file, check_file, check_img_remove, create_msg, del_msg

@@ -1,7 +1,7 @@
 import pprint
 
 from backend.models.basic_model import User, File
-from app import api, app, request, jsonify, db, jwt_required, get_jwt_identity
+from app import request, jsonify, db, jwt_required, get_jwt_identity
 from werkzeug.security import generate_password_hash, check_password_hash
 from backend.basics.settings import create_msg, edit_msg, del_msg, check_file, check_img_remove, add_file
 import requests

@@ -1,4 +1,4 @@
-from app import api, app, cross_origin, db, request, jsonify
+from app import  cross_origin, db, request, jsonify
 from backend.configs import gennis_server_url
 import requests
 from backend.parent.models import Parent

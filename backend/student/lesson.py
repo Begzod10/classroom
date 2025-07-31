@@ -3,7 +3,8 @@ import datetime
 from backend.models.basic_model import Student, StudentLesson, ExerciseAnswers, StudentExercise, StudentExerciseBlock, \
     User, StudentLevel, Exercise, ExerciseBlock, StudentChapter, StudentSubject, Lesson, StudentLessonArchive, Group, \
     StudentCommentForLesson
-from app import api, app, db, request, jsonify, contains_eager
+from app import db, request, jsonify
+from sqlalchemy.orm import contains_eager
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from backend.models.settings import iterate_models
 from pprint import pprint

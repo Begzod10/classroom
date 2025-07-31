@@ -1,5 +1,6 @@
 from backend.models.basic_model import Lesson, StudentChapter, Chapter, StudentLesson, User, Student
-from app import request, db, jsonify, desc
+from app import request, db, jsonify
+from sqlalchemy import desc
 from pprint import pprint
 from backend.models.settings import iterate_models
 from flask_jwt_extended import jwt_required, get_jwt_identity

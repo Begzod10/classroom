@@ -1,8 +1,9 @@
-from app import app, jsonify, api, request, or_
+from app import jsonify, request
 from backend.models.basic_model import db, Pisa, PisaBlockText, PisaBlockTextAnswer, PisaBlockQuestionOptions, PisaTest, \
     PisaStudent, PisaFileType, PisaBlockOptionsStudent, PisaBlockTextAnswerStudent, School, create_school, User, \
     PisaStudent, Role, Location
 import pprint
+from sqlalchemy import or_, and_
 from .utils import serialize_block
 from backend.basics.settings import check_exist_classroom_id
 from werkzeug.security import generate_password_hash

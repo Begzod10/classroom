@@ -4,12 +4,13 @@ from flasgger import swag_from
 from flask import Blueprint
 from flask_jwt_extended import jwt_required
 
-from app import jsonify, request, contains_eager
+from app import jsonify, request
+
 from backend.models.basic_model import Exercise, SubjectLevel, StudentExercise, StudentLesson, \
     ExerciseBlock, Group, Student, Chapter, Lesson, StudentChapter, ExerciseAnswers, StudentExerciseBlock, \
     StudentLessonArchive
 from backend.models.settings import iterate_models
-from sqlalchemy.orm import aliased
+from sqlalchemy.orm import aliased, contains_eager
 from sqlalchemy import func, and_, or_, join
 from app import db
 

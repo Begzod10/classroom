@@ -1,11 +1,11 @@
 #!/venv python3
 # -*- coding: utf-8 -*-
 # The above encoding declaration is required and the file must be saved as UTF-8
-from flask import *
-from backend.models.basic_model import *
+from flask import request, jsonify, Flask, current_app
+
 from flask_cors import CORS, cross_origin
 from pprint import pprint
-from werkzeug.utils import *
+from werkzeug.utils import secure_filename, send_from_directory
 import os
 import json
 from flask_jwt_extended import JWTManager, create_refresh_token, get_jwt_identity, create_access_token, \
@@ -25,6 +25,8 @@ from backend.basics.views import register_views
 from backend.student.views import register_student_routes
 from backend.user.views import register_user_view
 from backend.group.views import register_create_group
+from backend.models.views import UserAdmin, SubjectAdmin, RoleAdmin
+
 load_dotenv()
 
 
@@ -70,29 +72,10 @@ def create_app():
             task_ignore_result=True,
         ),
     )
-
-    # register_commands(app)
-    # register_teacher_views(app)
-
     return app
 
 
 app = create_app()
-
-api = '/api'
-
-# group
-
-# student
-from backend.student.views import *
-
-# teacher
-
-# class test
-from backend.class_test.views import *
-
-
-from backend.models.views import *
 
 
 @app.route('/flask_static/<path:filename>')

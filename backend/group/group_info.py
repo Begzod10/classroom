@@ -3,7 +3,9 @@ from flasgger import swag_from
 from flask import Blueprint
 from flask_jwt_extended import get_jwt_identity, jwt_required
 
-from app import cross_origin, db, contains_eager, request, or_, jsonify
+from app import cross_origin, db, request, jsonify
+from sqlalchemy import or_
+from sqlalchemy.orm import contains_eager
 from backend.configs import gennis_server_url
 from backend.models.basic_model import Student, StudentLevel, Teacher, Group, SubjectLevel, User, StudentSubject, \
     Chapter, StudentChapter, StudentLesson

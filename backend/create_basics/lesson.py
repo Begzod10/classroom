@@ -1,6 +1,8 @@
 from backend.models.basic_model import Exercise, Lesson, LessonBlock, StudentLesson, Student, File, User, \
     StudentLessonArchive, SubjectLevel, Subject, Chapter, StudentLevel
-from app import jsonify, request, db, or_, contains_eager, current_app
+from app import jsonify, request, db, current_app
+from sqlalchemy import or_
+
 from backend.models.settings import iterate_models
 from backend.basics.settings import add_file, check_img_remove, edit_msg, create_msg, del_msg
 from pprint import pprint

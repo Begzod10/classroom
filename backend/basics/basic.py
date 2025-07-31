@@ -41,8 +41,9 @@ def login():
                 if not exist_location:
                     exist_location = Location(name=location['name'], platform_id=location['value'])
                     exist_location.add_commit()
-                user.location_id = exist_location.id if exist_location else None
-                db.session.commit()
+                if user:
+                    user.location_id = exist_location.id if exist_location else None
+                    db.session.commit()
             if not user_get:
                 return {"msg": "Username yoki parol noto'g'ri", "success": False}, 200
             if not user:

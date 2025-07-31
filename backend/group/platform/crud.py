@@ -1,7 +1,9 @@
 from flasgger import swag_from
 from flask import Blueprint
 
-from app import jsonify, db, contains_eager
+from app import jsonify, db
+from sqlalchemy import or_
+from sqlalchemy.orm import contains_eager
 from backend.models.basic_model import Group, Student, Teacher, User
 
 group_bp = Blueprint('group_bp', __name__)
