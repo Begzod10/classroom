@@ -105,11 +105,11 @@ def student_tests(group_id, month, year):
 
 
 @get_parent_bp.route('/student_payments', methods=['GET'])
-def student_tests_data():
+def student_tests_datas():
     id = request.args.get('id', type=int)
     payment_status = request.args.get('payment', type=lambda v: v.lower() == 'true')
     response = requests.get(
-        f"{gennis_server_url}/api/student_payments?id={id}&payment={payment_status}",
+        f"{gennis_server_url}/api/parent/student_payments?id={id}&payment={payment_status}",
         headers={
             'Content-Type': 'application/json'
         })
