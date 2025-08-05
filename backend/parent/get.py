@@ -32,9 +32,9 @@ def student_attendance_dates(platform_id):
     return jsonify(attendance_response)
 
 
-@get_parent_bp.route('/student_group_list/<platform_id>', methods=['GET'])
-def student_group_list(platform_id):
-    response = requests.get(f"{gennis_server_url}/api/get_student_group_list/{platform_id}",
+@get_parent_bp.route('/student_group_list/<platform_id>/<int:year>/<int:month>', methods=['GET'])
+def student_group_list(platform_id, year, month):
+    response = requests.get(f"{gennis_server_url}/api/get_student_group_list/{platform_id}/{year}/{month}",
                             headers={
                                 'Content-Type': 'application/json'
                             })
