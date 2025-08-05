@@ -1,4 +1,4 @@
-from app import  cross_origin, db, request, jsonify
+from app import cross_origin, db, request, jsonify
 from backend.configs import gennis_server_url
 import requests
 from backend.parent.models import Parent
@@ -100,5 +100,18 @@ def student_tests(group_id, month, year):
         f"{gennis_server_url}/api/filter_test_classroom/{group_id}/{month}/{year}",
         headers={'Content-Type': 'application/json'}
     )
+    datas_response = response.json()
+    return jsonify(datas_response)
+
+
+@get_parent_bp.route('/student_payments', methods=['GET'])
+def student_payments_cl():
+    id = request.args.get('id', type=int)
+    payment_status = request.args.get('payment', type=lambda v: v.lower() == 'true')
+    response = requests.get(
+        f"{gennis_server_url}/api/parent/student_payments?id={id}&payment={payment_status}",
+        headers={
+            'Content-Type': 'application/json'
+        })
     datas_response = response.json()
     return jsonify(datas_response)
