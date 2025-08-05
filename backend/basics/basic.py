@@ -34,16 +34,10 @@ def login():
                 "username": username,
                 "password": password,
             })
+            pprint(response.json())
             user_get = response.json()['user'] if 'user' in response.json() else {}
             location = response.json()['location'] if 'location' in response.json() else {}
-            if location:
-                exist_location = Location.query.filter(Location.platform_id == location['value']).first()
-                if not exist_location:
-                    exist_location = Location(name=location['name'], platform_id=location['value'])
-                    exist_location.add_commit()
-                if user:
-                    user.location_id = exist_location.id if exist_location else None
-                    db.session.commit()
+
             if not user_get:
                 return {"msg": "Username yoki parol noto'g'ri", "success": False}, 200
             if not user:
@@ -52,6 +46,14 @@ def login():
             if user_get['parent']:
                 pprint(user_get)
                 check_user_gennis(user_get)
+            if location:
+                exist_location = Location.query.filter(Location.platform_id == location['value']).first()
+                if not exist_location:
+                    exist_location = Location(name=location['name'], platform_id=location['value'])
+                    exist_location.add_commit()
+                if user:
+                    user.location_id = exist_location.id if exist_location else None
+                    db.session.commit()
         else:
             response = requests.post(f"{turon_server_url}/api/token/", headers={
                 'Content-Type': 'application/json'
