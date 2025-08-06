@@ -21,7 +21,7 @@ def lesson_plan_list(group_id, date):
     group = Group.query.filter(Group.id == group_id).first()
     if user.system_name == "gennis":
         response = requests.get(
-            f"{gennis_server_url}/api/lesson_plan_list_classroom/{group.platform_id}/{date}")
+            f"{gennis_server_url}/api/teacher/lesson_plan_list_classroom/{group.platform_id}/{date}")
         return jsonify(response.json())
 
 
@@ -35,7 +35,7 @@ def get_lesson_plan(group_id):
     group = Group.query.filter(Group.id == group_id).first()
     if user.system_name == "gennis":
         response = requests.post(
-            f"{gennis_server_url}/api/get_lesson_plan_classroom/{group.platform_id}", json=request.get_json())
+            f"{gennis_server_url}/api/teacher/get_lesson_plan_classroom/{group.platform_id}", json=request.get_json())
         return jsonify(response.json())
 
 
@@ -48,5 +48,5 @@ def change_lesson_plan(plan_id):
     user = User.query.filter(User.classroom_user_id == indentity).first()
     if user.system_name == "gennis":
         response = requests.post(
-            f"{gennis_server_url}/api/change_lesson_plan_classroom/{plan_id}", json=request.get_json())
+            f"{gennis_server_url}/api/teacher/change_lesson_plan_classroom/{plan_id}", json=request.get_json())
         return jsonify(response.json())

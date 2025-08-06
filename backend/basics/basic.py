@@ -131,7 +131,7 @@ def refresh():
                     'Content-Type': 'application/json'
                 })
             else:
-                response = requests.get(f"{gennis_server_url}/api/get_student_balance/{user.platform_id}", headers={
+                response = requests.get(f"{gennis_server_url}/api/student/get_student_balance/{user.platform_id}", headers={
                     'Content-Type': 'application/json'
                 })
         else:

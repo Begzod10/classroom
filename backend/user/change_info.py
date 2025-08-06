@@ -42,7 +42,7 @@ def change_pas_user():
         })
         db.session.commit()
         if user.system_name == "gennis":
-            response = requests.post(f"{gennis_server_url}/api/change_student_classroom/{user.platform_id}", headers={
+            response = requests.post(f"{gennis_server_url}/api/student/change_student_classroom/{user.platform_id}", headers={
                 'Content-Type': 'application/json'
             }, json={
                 "username": json['username'],
@@ -55,7 +55,7 @@ def change_pas_user():
         User.query.filter(User.classroom_user_id == indentity).update({'password': hash})
         db.session.commit()
         if user.system_name == "gennis":
-            response = requests.post(f"{gennis_server_url}/api/change_student_password/{user.platform_id}", headers={
+            response = requests.post(f"{gennis_server_url}/api/student/change_student_password/{user.platform_id}", headers={
                 'Content-Type': 'application/json'
             }, json={
                 "password": password,
