@@ -82,7 +82,7 @@ def student_payments(platform_id):
 @get_parent_bp.route('/student_tests_data/<int:group_id>', methods=['GET'])
 def student_tests_data(group_id):
     response = requests.get(
-        f"{gennis_server_url}/api/filter_datas_in_group_classroom/{group_id}",
+        f"{gennis_server_url}/api/group_classroom_test/filter_datas_in_group_classroom/{group_id}",
         headers={
             'Content-Type': 'application/json'
         })

@@ -28,7 +28,7 @@ def login():
     user = User.query.filter(User.username == username, system_name == system_name).first()
     if system_name and username != "metod":
         if system_name == "gennis":
-            response = requests.post(f"{gennis_server_url}/api/login2", headers={
+            response = requests.post(f"{gennis_server_url}/api/base/login", headers={
                 'Content-Type': 'application/json'
             }, json={
                 "username": username,
@@ -69,9 +69,10 @@ def login():
         if user:
             if user.role.type != "methodist" and user.role.type != "parent":
                 if system_name == "gennis":
-                    response = requests.get(f"{gennis_server_url}/api/classroom/send_user_data/{user.platform_id}", headers={
-                        'Content-Type': 'application/json'
-                    })
+                    response = requests.get(f"{gennis_server_url}/api/classroom/send_user_data/{user.platform_id}",
+                                            headers={
+                                                'Content-Type': 'application/json'
+                                            })
                     user_get = response.json()['user']
                     add_gennis_user_data(user_get, user)
 
