@@ -28,7 +28,7 @@ def subject_list():
         subjects = Subject.query.filter(
             or_(Subject.disabled == False, Subject.disabled == None, Subject.levels != None)).order_by(
             Subject.id).all()
-        requests.post(f"{gennis_server_url}/api/subjects_add", json={"subjects": iterate_models(subjects)})
+        requests.post(f"{gennis_server_url}/api/classroom/subjects_add", json={"subjects": iterate_models(subjects)})
     elif user.role.type == "student":
         student = Student.query.filter(Student.user_id == user.id).first()
         groups = db.session.query(Group).join(Group.student).options(contains_eager(Group.student)).filter(

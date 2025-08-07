@@ -69,7 +69,7 @@ def login():
         if user:
             if user.role.type != "methodist" and user.role.type != "parent":
                 if system_name == "gennis":
-                    response = requests.get(f"{gennis_server_url}/api/send_user_data/{user.platform_id}", headers={
+                    response = requests.get(f"{gennis_server_url}/api/classroom/send_user_data/{user.platform_id}", headers={
                         'Content-Type': 'application/json'
                     })
                     user_get = response.json()['user']
@@ -127,13 +127,15 @@ def refresh():
     if user.role.type != "methodist" and user.system_name != "pisa":
         if user.system_name == "gennis":
             if user.teacher:
-                response = requests.get(f"{gennis_server_url}/api/get_teacher_balance/{user.platform_id}", headers={
-                    'Content-Type': 'application/json'
-                })
+                response = requests.get(f"{gennis_server_url}/api/teacher/get_teacher_balance/{user.platform_id}",
+                                        headers={
+                                            'Content-Type': 'application/json'
+                                        })
             else:
-                response = requests.get(f"{gennis_server_url}/api/student/get_student_balance/{user.platform_id}", headers={
-                    'Content-Type': 'application/json'
-                })
+                response = requests.get(f"{gennis_server_url}/api/student/get_student_balance/{user.platform_id}",
+                                        headers={
+                                            'Content-Type': 'application/json'
+                                        })
         else:
 
             if user.teacher:
@@ -164,7 +166,7 @@ def refresh():
 @basic_bp.route(f'send_user/<token>')
 @cross_origin()
 def send_user(token):
-    response = requests.get(f"{gennis_server_url}/api/get_user", headers={
+    response = requests.get(f"{gennis_server_url}/api/base/get_user", headers={
         "Authorization": "Bearer " + token,
         'Content-Type': 'application/json'
     })

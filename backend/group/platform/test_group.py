@@ -19,7 +19,7 @@ def create_test(group_id):
     if not group or not group.platform_id:
         return jsonify({"success": False, "msg": "Group or platform ID not found"}), 404
 
-    target_url = f"{gennis_server_url}/api/create_test_classroom/{group.platform_id}"
+    target_url = f"{gennis_server_url}/api/group_classroom_test/create_test_classroom/{group.platform_id}"
 
     if request.method in ['POST', 'PUT']:
         if request.content_type.startswith("multipart/form-data"):
@@ -59,11 +59,13 @@ def filter_datas_in_group(group_id):
     group = Group.query.filter(Group.id == group_id).first()
     if group.platform_id:
         if request.method == 'GET':
-            response = requests.get(f"{gennis_server_url}/api/filter_datas_in_group_classroom/{group.platform_id}")
+            response = requests.get(
+                f"{gennis_server_url}/api/group_classroom_test/filter_datas_in_group_classroom/{group.platform_id}")
             return jsonify(response.json())
         else:
-            response = requests.post(f"{gennis_server_url}/api/filter_datas_in_group_classroom/{group.platform_id}",
-                                     json=request.get_json())
+            response = requests.post(
+                f"{gennis_server_url}/api/group_classroom_test/filter_datas_in_group_classroom/{group.platform_id}",
+                json=request.get_json())
         return jsonify(response.json())
 
 
@@ -74,8 +76,9 @@ def filter_datas_in_group(group_id):
 def filter_test_group(group_id):
     group = Group.query.filter(Group.id == group_id).first()
     if group.platform_id:
-        response = requests.post(f"{gennis_server_url}/api/filter_test_group_classroom/{group.platform_id}",
-                                 json=request.get_json())
+        response = requests.post(
+            f"{gennis_server_url}/api/group_classroom_test/filter_test_group_classroom/{group.platform_id}",
+            json=request.get_json())
         return jsonify(response.json())
 
 
@@ -86,6 +89,7 @@ def filter_test_group(group_id):
 def submit_test_group(group_id):
     group = Group.query.filter(Group.id == group_id).first()
     if group.platform_id:
-        response = requests.post(f"{gennis_server_url}/api/submit_test_group_classroom/{group.platform_id}",
-                                 json=request.get_json())
+        response = requests.post(
+            f"{gennis_server_url}/api/group_classroom_test/submit_test_group_classroom/{group.platform_id}",
+            json=request.get_json())
         return jsonify(response.json())
