@@ -80,7 +80,7 @@ def group_profile(group_id):
     group = Group.query.filter(Group.id == group_id).first()
     errors = []
     if user.system_name == "gennis":
-        response = requests.get(f"{gennis_server_url}/api/group_profile_classroom/{group.platform_id}", headers={
+        response = requests.get(f"{gennis_server_url}/api/group_classroom_profile/group_profile_classroom/{group.platform_id}", headers={
             'Content-Type': 'application/json'
         })
         user_id_list = response.json()['user_id_list']

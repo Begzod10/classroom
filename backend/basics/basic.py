@@ -34,16 +34,10 @@ def login():
                 "username": username,
                 "password": password,
             })
+            pprint(response.json())
             user_get = response.json()['user'] if 'user' in response.json() else {}
             location = response.json()['location'] if 'location' in response.json() else {}
-            if location:
-                exist_location = Location.query.filter(Location.platform_id == location['value']).first()
-                if not exist_location:
-                    exist_location = Location(name=location['name'], platform_id=location['value'])
-                    exist_location.add_commit()
-                if user:
-                    user.location_id = exist_location.id if exist_location else None
-                    db.session.commit()
+
             if not user_get:
                 return {"msg": "Username yoki parol noto'g'ri", "success": False}, 200
             if not user:
@@ -52,6 +46,14 @@ def login():
             if user_get['parent']:
                 pprint(user_get)
                 check_user_gennis(user_get)
+            if location:
+                exist_location = Location.query.filter(Location.platform_id == location['value']).first()
+                if not exist_location:
+                    exist_location = Location(name=location['name'], platform_id=location['value'])
+                    exist_location.add_commit()
+                if user:
+                    user.location_id = exist_location.id if exist_location else None
+                    db.session.commit()
         else:
             response = requests.post(f"{turon_server_url}/api/token/", headers={
                 'Content-Type': 'application/json'
@@ -67,12 +69,13 @@ def login():
         if user:
             if user.role.type != "methodist" and user.role.type != "parent":
                 if system_name == "gennis":
-                    response = requests.get(f"{gennis_server_url}/api/send_user_data/{user.platform_id}", headers={
-                        'Content-Type': 'application/json'
-                    })
-                    print(response.json())
+
+                    response = requests.get(f"{gennis_server_url}/api/classroom/send_user_data/{user.platform_id}",
+                                            headers={
+                                                'Content-Type': 'application/json'
+                                            })
                     user_get = response.json()['user']
-                    print(user_get)
+
                     add_gennis_user_data(user_get, user)
 
         if not user.classroom_user_id:
@@ -127,13 +130,15 @@ def refresh():
     if user.role.type != "methodist" and user.system_name != "pisa":
         if user.system_name == "gennis":
             if user.teacher:
-                response = requests.get(f"{gennis_server_url}/api/get_teacher_balance/{user.platform_id}", headers={
-                    'Content-Type': 'application/json'
-                })
+                response = requests.get(f"{gennis_server_url}/api/teacher/get_teacher_balance/{user.platform_id}",
+                                        headers={
+                                            'Content-Type': 'application/json'
+                                        })
             else:
-                response = requests.get(f"{gennis_server_url}/api/student/get_student_balance/{user.platform_id}", headers={
-                    'Content-Type': 'application/json'
-                })
+                response = requests.get(f"{gennis_server_url}/api/student/get_student_balance/{user.platform_id}",
+                                        headers={
+                                            'Content-Type': 'application/json'
+                                        })
         else:
 
             if user.teacher:
@@ -164,7 +169,7 @@ def refresh():
 @basic_bp.route(f'send_user/<token>')
 @cross_origin()
 def send_user(token):
-    response = requests.get(f"{gennis_server_url}/api/get_user", headers={
+    response = requests.get(f"{gennis_server_url}/api/base/get_user", headers={
         "Authorization": "Bearer " + token,
         'Content-Type': 'application/json'
     })

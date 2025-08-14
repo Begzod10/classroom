@@ -27,7 +27,7 @@ def filter_exercise(subject_id, level_id):
         Exercise.id).all()
 
     return jsonify({
-        "data": iterate_models(exercises)
+        "data": [exercise.convert_json() for exercise in exercises]
     })
 
 
