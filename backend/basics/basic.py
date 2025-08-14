@@ -69,7 +69,7 @@ def login():
         if user:
             if user.role.type != "methodist" and user.role.type != "parent":
                 if system_name == "gennis":
-                    response = requests.get(f"{gennis_server_url}/api/classroom/send_user_data/{user.platform_id}",
+                    response = requests.get(f"{gennis_server_url}/api/classroom/send_user_data/{user.username}",
                                             headers={
                                                 'Content-Type': 'application/json'
                                             })

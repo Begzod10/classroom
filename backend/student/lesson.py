@@ -169,7 +169,7 @@ def student_lesson_complete():
                 else:
                     exercise_answer = ExerciseAnswers.query.filter_by(
                         block_id=block.id,
-                        desc=ans['text'][0]
+                        desc=ans['text'][0] if type(ans['text']) == list else ans['text']
                     ).first()
 
                     is_correct = ans['text'][0] == ans['value']

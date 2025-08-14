@@ -30,9 +30,10 @@ def delete_list_models(model, File, type=None):
 
 
 def send_subject_server(type_data, platform_server, subjects):
-    requests.post(f"{platform_server}/api/get_datas", headers={
-        'Content-Type': 'application/json'
-    }, json={
-        f"{type_data}": iterate_models(subjects),
-        "type": type_data
-    })
+    # requests.post(f"{platform_server}/api/get_datas", headers={
+    #     'Content-Type': 'application/json'
+    # }, json={
+    #     f"{type_data}": iterate_models(subjects),
+    #     "type": type_data
+    # })
+    pass
