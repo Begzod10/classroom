@@ -18,7 +18,7 @@ def teacher_salary_info():
     user = User.query.filter(User.classroom_user_id == identity).first()
 
     if user.system_name == "gennis":
-        response = requests.get(f"{gennis_server_url}/api/salary_info_classroom/{user.platform_id}")
+        response = requests.get(f"{gennis_server_url}/api/account/salary_info_classroom/{user.platform_id}")
         return jsonify(
             response.json()
         )
@@ -35,7 +35,7 @@ def block_salary(location_id, year_id):
     user = User.query.filter(User.classroom_user_id == identity).first()
     if user.system_name == "gennis":
         response = requests.get(
-            f"{gennis_server_url}/api/block_salary_classroom/{user.platform_id}/{location_id}/{year_id}")
+            f"{gennis_server_url}/api/account/block_salary_classroom/{user.platform_id}/{location_id}/{year_id}")
         return jsonify(
             response.json()
         )
@@ -59,7 +59,7 @@ def teacher_salary(location_id, year_id):
     user = User.query.filter(User.classroom_user_id == identity).first()
     if user.system_name == "gennis":
         response = requests.get(
-            f"{gennis_server_url}/api/block_salary2/{user.platform_id}/{location_id}/{year_id}")
+            f"{gennis_server_url}/api/account/block_salary2/{user.platform_id}/{location_id}/{year_id}")
         return jsonify(
             response.json()
         )
@@ -81,7 +81,7 @@ def teacher_salary_inside(salary_id):
     if user.system_name == "gennis":
 
         response = requests.get(
-            f"{gennis_server_url}/api/teacher_salary_inside_classroom/{user.platform_id}/{salary_id}")
+            f"{gennis_server_url}/api/account/teacher_salary_inside_classroom/{user.platform_id}/{salary_id}")
 
         return jsonify(
             response.json()
@@ -104,7 +104,7 @@ def teacher_black_salary():
     identity = get_jwt_identity()
     user = User.query.filter(User.classroom_user_id == identity).first()
     if user.system_name == "gennis":
-        response = requests.get(f"{gennis_server_url}/api/black_salary_classroom/{user.platform_id}")
+        response = requests.get(f"{gennis_server_url}/api/account/black_salary_classroom/{user.platform_id}")
         return jsonify(
             response.json()
         )
@@ -118,7 +118,7 @@ def teacher_locations():
     indentity = get_jwt_identity()
     user = User.query.filter(User.classroom_user_id == indentity).first()
     if user.system_name == "gennis":
-        response = requests.get(f"{gennis_server_url}/api/teacher_locations_classroom/{user.platform_id}")
+        response = requests.get(f"{gennis_server_url}/api/account/teacher_locations_classroom/{user.platform_id}")
         return jsonify(
             response.json()
         )
@@ -136,7 +136,8 @@ def user_time_table(location_id):
     student = Student.query.filter(Student.user_id == user.id).first()
     teacher = Teacher.query.filter(Teacher.user_id == user.id).first()
     if user.system_name == "gennis":
-        response = requests.get(f"{gennis_server_url}/api/user_time_table_classroom/{user.platform_id}/{location_id}")
+        response = requests.get(
+            f"{gennis_server_url}/api/base/user_time_table_classroom/{user.platform_id}/{location_id}")
         return jsonify(
             response.json()
         )

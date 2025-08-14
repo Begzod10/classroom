@@ -80,9 +80,10 @@ def group_profile(group_id):
     group = Group.query.filter(Group.id == group_id).first()
     errors = []
     if user.system_name == "gennis":
-        response = requests.get(f"{gennis_server_url}/api/group_classroom_profile/group_profile_classroom/{group.platform_id}", headers={
-            'Content-Type': 'application/json'
-        })
+        response = requests.get(
+            f"{gennis_server_url}/api/group_classroom_profile/group_profile_classroom/{group.platform_id}", headers={
+                'Content-Type': 'application/json'
+            })
         user_id_list = response.json()['user_id_list']
         errors = response.json()['errors']
         users = User.query.filter(User.platform_id.in_(user_id_list)).all()
@@ -142,7 +143,8 @@ def group_profile(group_id):
                                                                StudentLevel.group_id == group_id).order_by(
             SubjectLevel.id).all()
     else:
-        subject_level = SubjectLevel.query.filter(SubjectLevel.subject_id == group.subject_id).order_by(
+        subject_level = SubjectLevel.query.filter(SubjectLevel.subject_id == group.subject_id,
+                                                  SubjectLevel.system_name == user.system_name).order_by(
             SubjectLevel.id).all()
     user = User.query.filter_by(user_id=identity).first()
 
@@ -176,8 +178,9 @@ def set_observer(user_id, system_name):
 
 @group_bps.route('/check_level/<group_id>/<level_id>', methods=['POST', 'GET'])
 @swag_from({'tags': ['Group'], "methods": ["GET", "POST"]})
-# @app.route(f'{api}/check_level/<group_id>/<level_id>', methods=['POST', 'GET'])
+@jwt_required()
 def check_level(group_id, level_id):
+    user = User.query.filter(User.classroom_user_id == get_jwt_identity()).first()
     subject_level = SubjectLevel.query.filter(SubjectLevel.id == level_id).first()
     if request.method == "POST":
         student_list = request.get_json()['users']
