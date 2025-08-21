@@ -95,6 +95,5 @@ def check_username():
                                  json={"username": username})
         return jsonify(response.json())
     else:
-        print(turon_server_url)
         response = requests.post(f"{turon_server_url}/api/Users/username-check/", json={"username": username})
         return jsonify(response.json())

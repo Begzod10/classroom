@@ -43,7 +43,7 @@ def get_groups():
 
     else:
         groups = db.session.query(Group).join(Group.teacher).options(contains_eager(Group.teacher)).filter(
-            Teacher.id == teacher.id).order_by(Group.platform_id).all()
+            Teacher.id == teacher.id).order_by(Group.id).all()
         for group in groups:
             if group.teacher_id != teacher.id:
                 teacher.groups.remove(group)

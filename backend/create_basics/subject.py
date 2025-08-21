@@ -42,13 +42,18 @@ def subject_list():
                 subject_list.append(subject.subject_id)
         else:
             for gr in groups:
-                if gr.subject_id not in subject_list:
-                    subject_list.append(gr.subject_id)
+                if gr.platform_id:
+                    if gr.subject_id not in subject_list:
+                        subject_list.append(gr.subject_id)
+                else:
+                    for sub in gr.subjects:
+                        if sub.id not in subject_list:
+                            subject_list.append(sub.id)
 
         subjects = Subject.query.filter(Subject.id.in_(sub for sub in subject_list)).order_by(Subject.id).all()
     else:
         teacher = Teacher.query.filter(Teacher.user_id == user.id).first()
-        if user.system_name != "school":
+        if user.system_name != "turon":
 
             groups = db.session.query(Group).join(Group.teacher).options(contains_eager(Group.teacher)).filter(
                 Teacher.id == teacher.id).all()
@@ -60,6 +65,7 @@ def subject_list():
         else:
             subjects = Subject.query.filter(Subject.id.in_(sub.id for sub in teacher.subjects)).order_by(
                 Subject.id).all()
+
     return jsonify({
         "subjects": iterate_models(subjects),
     })

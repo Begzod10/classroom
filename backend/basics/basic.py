@@ -34,7 +34,6 @@ def login():
                 "username": username,
                 "password": password,
             })
-            pprint(response.json())
             user_get = response.json()['user'] if 'user' in response.json() else {}
             location = response.json()['location'] if 'location' in response.json() else {}
 
@@ -44,7 +43,6 @@ def login():
                 user = check_user_gennis(user_get)
 
             if user_get['parent']:
-                pprint(user_get)
                 check_user_gennis(user_get)
             if location:
                 exist_location = Location.query.filter(Location.platform_id == location['value']).first()
@@ -64,8 +62,8 @@ def login():
             user_get = response.json()['user'] if 'user' in response.json() else {}
             if not user_get:
                 return {"msg": "Username yoki parol noto'g'ri", "success": False}, 200
-            if not user:
-                user = check_user_turon(user_get)
+
+            user = check_user_turon(user_get)
         if user:
             if user.role.type != "methodist" and user.role.type != "parent":
                 if system_name == "gennis":
