@@ -1,6 +1,6 @@
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
-from sqlalchemy import *
+from sqlalchemy import Column, Integer, String, DateTime, Boolean, ForeignKey
 from sqlalchemy.orm import contains_eager
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func, functions
@@ -297,3 +297,4 @@ from backend.certificate.models import *
 from backend.student.models import *
 from backend.pisa.models import *
 from backend.parent.models import *
+from backend.apps.mentimeter.models import *

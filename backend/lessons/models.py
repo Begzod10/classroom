@@ -1,7 +1,8 @@
 import datetime
 
-from backend.models.basic_model import db, Column, relationship, Integer, String, ForeignKey, Float, Boolean, JSON, \
-    DateTime
+from backend.models.basic_model import db
+from sqlalchemy import Column, Integer, String, ForeignKey, JSON, DateTime, Boolean, Float
+from sqlalchemy.orm import relationship
 
 
 class Subject(db.Model):

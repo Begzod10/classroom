@@ -16,14 +16,14 @@ from flasgger import swag_from
 lesson_bp = Blueprint('lesson_folder', __name__)
 
 
-@lesson_bp.route(f'/filter/exercise/<subject_id>/<level_id>')
+@lesson_bp.route(f'/filter/exercise/<subject_id>/<exercise_type>')
 @jwt_required()
 @swag_from({
     'tags': ['Lesson'],
     "methods": ["GET"],
 })
-def filter_exercise(subject_id, level_id):
-    exercises = Exercise.query.filter(Exercise.subject_id == subject_id, Exercise.level_id == level_id).order_by(
+def filter_exercise(subject_id, exercise_type):
+    exercises = Exercise.query.filter(Exercise.subject_id == subject_id, Exercise.type_id == exercise_type).order_by(
         Exercise.id).all()
 
     return jsonify({

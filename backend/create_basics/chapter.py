@@ -36,8 +36,27 @@ def chapters_info(level_id):
             "status": True
         })
     else:
-        chapters = Chapter.query.filter(Chapter.level_id == level_id).order_by(
-            Chapter.order).all()
+        chapters = Chapter.query.filter(
+            Chapter.level_id == level_id
+        ).order_by(Chapter.order).all()
+
+        # --- FIX: check for duplicates ---
+        seen_orders = set()
+        duplicates_found = False
+        current_order = 0
+        for ch in chapters:
+            if ch.order in seen_orders:
+                ch.order = current_order
+                duplicates_found = True
+            else:
+                if ch.order != current_order:
+                    ch.order = current_order
+                    duplicates_found = True
+            seen_orders.add(ch.order)
+            current_order += 1
+
+        if duplicates_found:
+            db.session.commit()  # persist the repair
         if user.student:
             chapters = Chapter.query.filter(Chapter.level_id == level_id, Chapter.status == True).order_by(
                 Chapter.order).all()
@@ -111,6 +130,16 @@ def crud(chapter_id):
         })
     else:
         if not chapter.lesson:
+            old_order = chapter.order
+
+            # shift orders of all chapters after the deleted one
+            chapters_after = Chapter.query.filter(
+                Chapter.order > old_order,
+                Chapter.level_id == chapter.level_id,
+                Chapter.disabled == False
+            ).order_by(Chapter.order).all()
+            for ch in chapters_after:
+                ch.order -= 1
             db.session.delete(chapter)
             db.session.commit()
             return jsonify({
@@ -128,84 +157,133 @@ def crud(chapter_id):
 @swag_from({
     'tags': ['Chapter'],
     "methods": ["POST"],
-
 })
 def change_order():
-    type_info = request.get_json()['type']
-    chapter = request.get_json()['container']
-    index = request.get_json()['newIndex']
-    old_index = request.get_json()['oldIndex']
+    data = request.get_json()
+    type_info = data['type']
+    chapter_id = data['container']
+    new_index = data['newIndex']
+    old_index = data['oldIndex']
+
     if type_info == "lesson":
-        lesson = request.get_json()['lesson']
-        lesson = Lesson.query.filter(Lesson.id == lesson).first()
-        if chapter != lesson.chapter_id:
-            old_chapter_lessons = Lesson.query.filter(Lesson.id != lesson.id,
-                                                      Lesson.chapter_id == lesson.chapter_id,
-                                                      Lesson.order > lesson.order, Lesson.disabled == False).order_by(
-                Lesson.order).all()
+        lesson_id = data['lesson']
+        lesson = Lesson.query.filter_by(id=lesson_id).first()
+        print("old chapter", lesson.chapter_id)
+        if not lesson:
+            return jsonify({"msg": "Lesson not found", "status": False}), 404
+
+        # --- Case 1: Moving to another chapter ---
+        if chapter_id != lesson.chapter_id:
+            # Shift old chapter lessons back
+            old_chapter_lessons = Lesson.query.filter(
+                Lesson.id != lesson.id,
+                Lesson.chapter_id == lesson.chapter_id,
+                Lesson.order > lesson.order,
+                Lesson.disabled == False
+            ).order_by(Lesson.order).all()
+
             for less in old_chapter_lessons:
-                less.order = less.order - 1
-                db.session.commit()
-                if less.order < 0:
-                    less.order = 0
-                db.session.commit()
-            new_chapters_lessons = Lesson.query.filter(Lesson.chapter_id == chapter, Lesson.order >= index,
-                                                       Lesson.disabled == False).order_by(
-                Lesson.order).all()
-            for less in new_chapters_lessons:
-                less.order = less.order + 1
-                db.session.commit()
-            lesson.chapter_id = chapter
-            lesson.order = index
-            db.session.commit()
-        else:
-            lesson.chapter_id = chapter
-            lesson.order = index
-            db.session.commit()
-            if index < old_index:
-                lesson_list = Lesson.query.filter(Lesson.order >= index, Lesson.order <= old_index,
-                                                  Lesson.chapter_id == chapter, Lesson.id != lesson.id,
-                                                  Lesson.disabled == False).order_by(
-                    Lesson.order).all()
-                for less in lesson_list:
-                    less.order = less.order + 1
+                less.order = max(0, less.order - 1)
 
-                    db.session.commit()
+            # Shift new chapter lessons forward
+            new_chapter_lessons = Lesson.query.filter(
+                Lesson.chapter_id == chapter_id,
+                Lesson.order >= new_index,
+                Lesson.disabled == False
+            ).order_by(Lesson.order).all()
+
+            for less in new_chapter_lessons:
+                less.order += 1
+
+            # Move lesson
+            lesson.chapter_id = chapter_id
+            lesson.order = new_index
+            db.session.commit()
+            print("new chapter", lesson.chapter_id)
+        # --- Case 2: Same chapter reorder ---
+        else:
+            lesson.order = new_index
+            if new_index < old_index:
+                lesson_list = Lesson.query.filter(
+                    Lesson.order >= new_index,
+                    Lesson.order <= old_index,
+                    Lesson.chapter_id == chapter_id,
+                    Lesson.id != lesson.id,
+                    Lesson.disabled == False
+                ).order_by(Lesson.order).all()
+
+                for less in lesson_list:
+                    less.order += 1
             else:
-                lesson_list = Lesson.query.filter(Lesson.order <= index, Lesson.order >= old_index,
-                                                  Lesson.chapter_id == chapter, Lesson.id != lesson.id,
-                                                  Lesson.disabled == False).order_by(
-                    Lesson.order).all()
+                lesson_list = Lesson.query.filter(
+                    Lesson.order <= new_index,
+                    Lesson.order >= old_index,
+                    Lesson.chapter_id == chapter_id,
+                    Lesson.id != lesson.id,
+                    Lesson.disabled == False
+                ).order_by(Lesson.order).all()
 
                 for less in lesson_list:
+                    less.order = max(0, less.order - 1)
 
-                    less.order = less.order - 1
-                    db.session.commit()
-                    if less.order < 0:
-                        less.order = 0
-                    db.session.commit()
-    else:
 
-        get_chapter = Chapter.query.filter(Chapter.id == chapter).first()
-        get_chapter.order = index
+    else:  # Reordering chapters
+
+        chapter = Chapter.query.filter_by(id=chapter_id).first()
+
+        if not chapter:
+            return jsonify({"msg": "Chapter not found", "status": False}), 404
+
+        print("old order", chapter.order)
+
+        print("move:", old_index, "->", new_index)
+
+        if new_index < old_index:
+
+            print('moving UP (new_index < old_index)')
+
+            # shift down chapters in the target range
+
+            chapter_list = Chapter.query.filter(
+
+                Chapter.order >= new_index,
+
+                Chapter.order < old_index,  # strictly less than old_index
+
+                Chapter.disabled == False
+
+            ).order_by(Chapter.order).all()
+
+            for ch in chapter_list:
+                ch.order += 1
+
+
+        elif new_index > old_index:
+
+            print('moving DOWN (new_index > old_index)')
+
+            # shift up chapters in the target range
+
+            chapter_list = Chapter.query.filter(
+
+                Chapter.order <= new_index,
+
+                Chapter.order > old_index,  # strictly greater than old_index
+
+                Chapter.disabled == False
+
+            ).order_by(Chapter.order).all()
+
+            for ch in chapter_list:
+                ch.order -= 1
+
+        # finally, assign new order to the moved chapter
+
+        chapter.order = new_index
+
         db.session.commit()
-        if index < old_index:
-            chapter_list = Chapter.query.filter(Chapter.order >= index, Chapter.order <= old_index,
-                                                Chapter.id != get_chapter.id, Chapter.disabled == False).order_by(
-                Chapter.order).all()
+        print("new order", chapter.order)
 
-            for less in chapter_list:
-                less.order = less.order + 1
-                db.session.commit()
-
-        else:
-            chapter_list = Chapter.query.filter(Chapter.order <= index, Chapter.order >= old_index,
-                                                Chapter.id != get_chapter.id, Chapter.disabled == False).order_by(
-                Chapter.order).all()
-
-            for less in chapter_list:
-                less.order = less.order - 1
-                db.session.commit()
     return jsonify({
         "msg": "Tartib soni o'zgardi",
         "status": True

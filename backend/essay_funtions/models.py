@@ -1,4 +1,6 @@
-from backend.models.basic_model import *
+from backend.models.basic_model import db
+from sqlalchemy import Column, Integer, String, ForeignKey, Text, Boolean
+from sqlalchemy.orm import relationship
 
 
 class EssayTypes(db.Model):

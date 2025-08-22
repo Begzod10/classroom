@@ -18,6 +18,7 @@ from backend.pisa.api.views import register_pisa_views
 from backend.teacher.views import register_create_teacher
 
 from backend.create_basics.views import register_create_basics
+from backend.api.v1.mentimeter.views import register_mentimeter_views
 from flasgger import Swagger
 from backend.parent.views import register_parent_views
 from backend.mobile.parent.urls import register_mobile_parent_views
@@ -64,6 +65,7 @@ def create_app():
     register_create_teacher(api_prefix, app)
     register_user_view(api_prefix, app)
     register_create_group(api_prefix, app)
+    register_mentimeter_views(api_prefix, app)
 
     app.config.from_mapping(
         CELERY=dict(

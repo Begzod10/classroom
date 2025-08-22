@@ -11,16 +11,20 @@ from flasgger import swag_from
 level_bp = Blueprint('level_folder', __name__)
 
 
-@level_bp.route(f'/info/<int:subject_id>/', methods=['POST', 'GET'])
+@level_bp.route(f'/info/<int:subject_id>/', defaults={"system_name": None}, methods=['POST', 'GET'])
+@level_bp.route(f'/info/<int:subject_id>/<system_name>/', methods=['POST', 'GET'])
 @jwt_required()
 @swag_from({
     'tags': ['Subject Levels'],
     "methods": ["POST", "GET"],
 })
-def info_level(subject_id):
+def info_level(subject_id, system_name):
     identity = get_jwt_identity()
     user = User.query.filter(User.classroom_user_id == identity).first()
+    if user.teacher:
+        system_name = user.system_name
     subject_levels = SubjectLevel.query.filter(SubjectLevel.subject_id == subject_id,
+                                               SubjectLevel.system_name == system_name,
                                                SubjectLevel.disabled == False).order_by(SubjectLevel.id).all()
     if user.student:
         student = Student.query.filter(Student.user_id == user.id).first()
@@ -34,9 +38,10 @@ def info_level(subject_id):
         get_json = request.get_json()
         name = get_json['name']
         desc = get_json['desc']
+        system_name = get_json['system_name']
 
         try:
-            add = SubjectLevel(name=name, desc=desc, subject_id=subject_id)
+            add = SubjectLevel(name=name, desc=desc, subject_id=subject_id, system_name=system_name)
             add.add_commit()
             subject_levels = SubjectLevel.query.filter(SubjectLevel.subject_id == subject_id,
                                                        SubjectLevel.disabled == False).order_by(
@@ -63,6 +68,17 @@ def deleted_levels(subject_id):
                                                SubjectLevel.disabled == True).order_by(SubjectLevel.id).all()
     return jsonify({
         "data": iterate_models(subject_levels)
+    })
+
+
+@level_bp.route(f'/system/list/')
+@swag_from({
+    'tags': ['Subject Levels'],
+    "methods": ["GET"],
+})
+def system_list():
+    return jsonify({
+        "data": ["gennis", "turon"]
     })
 
 
