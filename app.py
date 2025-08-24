@@ -26,25 +26,19 @@ from backend.basics.views import register_views
 from backend.student.views import register_student_routes
 from backend.user.views import register_user_view
 from backend.group.views import register_create_group
+from backend.class_test.views import register_class_test
+
 from backend.models.views import UserAdmin, SubjectAdmin, RoleAdmin
 
 load_dotenv()
 
 
 def create_app():
-    app = Flask(
-        __name__,
-        static_folder="frontend/build",
-        static_url_path="/"
-    )
+    app = Flask(__name__, static_folder="frontend/build", static_url_path="/")
 
     app.config.from_object('backend.models.config')
 
-    app.config['SWAGGER'] = {
-        'uiversion': 3,
-        'parse': False,
-        'exclude_methods': []
-    }
+    app.config['SWAGGER'] = {'uiversion': 3, 'parse': False, 'exclude_methods': []}
 
     db.init_app(app)
     migrate.init_app(app, db)
@@ -66,14 +60,11 @@ def create_app():
     register_user_view(api_prefix, app)
     register_create_group(api_prefix, app)
     register_mentimeter_views(api_prefix, app)
+    register_class_test(app)
 
-    app.config.from_mapping(
-        CELERY=dict(
-            broker_url=os.getenv('CELERY_BROKER_URL', 'redis://localhost:6379/2'),
-            result_backend=os.getenv('CELERY_RESULT_BACKEND', 'redis://localhost:6379/2'),
-            task_ignore_result=True,
-        ),
-    )
+    app.config.from_mapping(CELERY=dict(broker_url=os.getenv('CELERY_BROKER_URL', 'redis://localhost:6379/2'),
+                                        result_backend=os.getenv('CELERY_RESULT_BACKEND', 'redis://localhost:6379/2'),
+                                        task_ignore_result=True, ), )
     return app
 
 

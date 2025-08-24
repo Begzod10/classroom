@@ -26,6 +26,7 @@ def info_level(subject_id, system_name):
     subject_levels = SubjectLevel.query.filter(SubjectLevel.subject_id == subject_id,
                                                SubjectLevel.system_name == system_name,
                                                SubjectLevel.disabled == False).order_by(SubjectLevel.id).all()
+    print(subject_levels)
     if user.student:
         student = Student.query.filter(Student.user_id == user.id).first()
         student_level = StudentLevel.query.filter(StudentLevel.subject_id == subject_id,

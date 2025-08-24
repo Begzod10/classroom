@@ -9,7 +9,6 @@ class SlideType(Base):
     __tablename__ = "slide_type"
     id = Column(Integer, primary_key=True)
     name = Column(String)
-    slides = relationship("Slide", backref="slide_type")
     deleted = Column(Boolean, default=False)
 
     def convert_json(self, entire=False):
@@ -31,6 +30,7 @@ class Slide(Base):
     subject_id = Column(Integer, ForeignKey('subject.id'))
     subject = relationship("Subject", backref="slide")
     deleted = Column(Boolean, default=False)
+
     user_id = Column(Integer, ForeignKey('user.id'))
     user = relationship("User", backref="slide")
     order = Column(Integer)
