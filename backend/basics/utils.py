@@ -16,9 +16,11 @@ def check_group_info(gr, type="gennis", user_id=None):
         subject_name = gr['subjects']['name']
         subject = Subject.query.filter_by(name=subject_name).first()
     else:
-        if not gr['subjects']:
+        if len(gr['subjects']) >= 1:
             subject_name = gr['subjects'][0]['name']
             subject = Subject.query.filter_by(name=subject_name).first()
+        else:
+            subject = None
 
     if not group:
         group_data = {
