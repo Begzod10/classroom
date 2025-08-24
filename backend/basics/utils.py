@@ -33,16 +33,18 @@ def check_group_info(gr, type="gennis", user_id=None):
         if type == "gennis":
             group = Group(platform_id=gr['id'], **group_data)
         else:
-            teacher = Teacher.query.filter_by(user_id=user_id).first()
-            group = Group(turon_id=gr['id'], teacher_id=teacher.id, **group_data)
 
-            for sub in gr['subjects']:
-                subject = Subject.query.filter_by(name=sub['name']).first()
-                if not subject:
-                    subject = Subject(name=sub['name'])
-                    db.session.add(subject)
-                if subject not in group.subjects:
-                    group.subjects.append(subject)
+            teacher = Teacher.query.filter_by(user_id=user_id).first()
+            if teacher:
+                group = Group(turon_id=gr['id'], teacher_id=teacher.id, **group_data)
+
+                for sub in gr['subjects']:
+                    subject = Subject.query.filter_by(name=sub['name']).first()
+                    if not subject:
+                        subject = Subject(name=sub['name'])
+                        db.session.add(subject)
+                    if subject not in group.subjects:
+                        group.subjects.append(subject)
 
         db.session.add(group)
 
@@ -53,9 +55,9 @@ def check_group_info(gr, type="gennis", user_id=None):
 
         if type == "turon":
             teacher = Teacher.query.filter_by(user_id=user_id).first()
-            print(teacher.id, group.teacher_id)
-            if teacher and group.teacher_id != teacher.id:
-                group.teacher_id = teacher.id
+            if teacher:
+                if teacher and group.teacher_id != teacher.id:
+                    group.teacher_id = teacher.id
 
             current_subjects = []
             for sub in gr['subjects']:
