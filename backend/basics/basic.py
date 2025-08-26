@@ -6,6 +6,7 @@ from app import cross_origin, db, request, jsonify, current_app
 from backend.models.settings import iterate_models
 from backend.models.basic_model import Role, Teacher, User, Student, Location, Subject, SubjectLevel, Group, \
     StudentSubject
+from backend.branch.models import Branch
 from flask_jwt_extended import jwt_required, get_jwt_identity, create_access_token, create_refresh_token
 from pprint import pprint
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -41,9 +42,27 @@ def login():
                 if not exist_location:
                     exist_location = Location(name=location['name'], platform_id=location['value'])
                     exist_location.add_commit()
-                if user:
-                    user.location_id = exist_location.id if exist_location else None
+
+                exist_branch = Branch.query.filter(
+                    Branch.location_id == exist_location.id,
+                    Branch.name.ilike(f"%{system_name}%")
+                ).first()
+
+                if not exist_branch:
+                    exist_branch = Branch(
+                        name=f"{system_name} branch",  # yoki kelgan system_name bilan nom berasan
+                        location_id=exist_location.id,
+                        campus_name=location.get("name", ""),  # agar location JSON’da bo‘lsa
+                    )
+                    db.session.add(exist_branch)
                     db.session.commit()
+
+                # User’ga branch id ni bog‘lash (agar kerak bo‘lsa)
+                if user:
+                    user.location_id = exist_location.id
+                    # user.branch_id = exist_branch.id  # agar User’da branch_id bo‘lsa
+                    db.session.commit()
+
             if not user_get:
                 return {"msg": "Username yoki parol noto'g'ri", "success": False}, 200
             if not user:

@@ -297,3 +297,6 @@ from backend.certificate.models import *
 from backend.student.models import *
 from backend.pisa.models import *
 from backend.parent.models import *
+from backend.branch.models import *
+from backend.room.models import *
+from backend.time_table.models import *
