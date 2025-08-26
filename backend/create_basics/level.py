@@ -21,12 +21,11 @@ level_bp = Blueprint('level_folder', __name__)
 def info_level(subject_id, system_name):
     identity = get_jwt_identity()
     user = User.query.filter(User.classroom_user_id == identity).first()
-    if user.teacher:
+    if not system_name:
         system_name = user.system_name
     subject_levels = SubjectLevel.query.filter(SubjectLevel.subject_id == subject_id,
                                                SubjectLevel.system_name == system_name,
                                                SubjectLevel.disabled == False).order_by(SubjectLevel.id).all()
-    print(subject_levels)
     if user.student:
         student = Student.query.filter(Student.user_id == user.id).first()
         student_level = StudentLevel.query.filter(StudentLevel.subject_id == subject_id,

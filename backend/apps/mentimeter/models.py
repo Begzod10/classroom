@@ -30,13 +30,31 @@ class Slide(Base):
     subject_id = Column(Integer, ForeignKey('subject.id'))
     subject = relationship("Subject", backref="slide")
     deleted = Column(Boolean, default=False)
-
+    level_id = Column(Integer, ForeignKey('subject_level.id'))
+    level = relationship("SubjectLevel", backref="slide")
     user_id = Column(Integer, ForeignKey('user.id'))
     user = relationship("User", backref="slide")
     order = Column(Integer)
 
     def convert_json(self, entire=False):
-        return {"id": self.id, "name": self.name}
+        return {
+            "id": self.id,
+            "name": self.name,
+            "order": self.order,
+            "level": {
+                "id": self.level.id if self.level else None,
+                "name": self.level.name if self.level else None
+            },
+            "subject": {
+                "id": self.subject.id if self.subject else None,
+                "name": self.subject.name if self.subject else None
+            },
+            "user": {
+                "id": self.user.id,
+                "name": self.user.name
+            },
+            "system_name": self.level.system_name if self.level else None
+        }
 
 
 class SlideItem(Base):

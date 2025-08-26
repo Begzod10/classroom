@@ -53,7 +53,6 @@ def login():
                     user.location_id = exist_location.id if exist_location else None
                     db.session.commit()
         else:
-            print(turon_server_url)
             response = requests.post(f"{turon_server_url}/api/token/", headers={
                 'Content-Type': 'application/json'
             }, json={
