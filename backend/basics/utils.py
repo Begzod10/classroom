@@ -76,7 +76,8 @@ def check_group_info(gr, type="gennis", user_id=None):
                     group.subjects.remove(subj)
 
     db.session.commit()
-    return group, (gr['subjects'] if type == "turon" else gr['subject'])
+    return group, (gr['subjects'])
+
 
 def check_user_gennis(user_get):
     if user_get['student']:
@@ -187,6 +188,7 @@ def check_user_gennis(user_get):
                     db.session.commit()
     return user
 
+
 def check_user_turon(info):
     print(info)
 
@@ -285,6 +287,7 @@ def check_user_turon(info):
 
     db.session.commit()
     return user
+
 
 def add_gennis_user_data(user_get, user):
     student = Student.query.filter(Student.user_id == user.id).first()

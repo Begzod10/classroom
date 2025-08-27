@@ -21,21 +21,19 @@ def crud(pk):
     method = request.method
 
     def get_level_subject_type(data):
-        level = SubjectLevel.query.get(data.get('level'))
+        # level = SubjectLevel.query.get(data.get('level'))
         subject = Subject.query.get(data.get('subject'))
         exercise_type = ExerciseTypes.query.get(data.get('type'))
-        return level, subject, exercise_type
+        return subject, exercise_type
 
     if method == "POST":
         data = request.get_json()
-        level, subject, exercise_type = get_level_subject_type(data)
-
-        if not all([level, subject, exercise_type]):
+        subject, exercise_type = get_level_subject_type(data)
+        if not all([subject, exercise_type]):
             return create_msg("Invalid data provided", status=False)
-
         exercise = Exercise(
-            name='unnamed',
-            level_id=level.id,
+            name=data.get('name'),
+            # level_id=level.id,
             subject_id=subject.id,
             type_id=exercise_type.id
         )
@@ -48,11 +46,11 @@ def crud(pk):
         if not exercise:
             return edit_msg("Exercise not found", False)
 
-        level, subject, exercise_type = get_level_subject_type(data)
+        subject, exercise_type = get_level_subject_type(data)
         exercise.name = data.get('title', exercise.name)
         exercise.random_status = data.get('random', False)
 
-        if level: exercise.level_id = level.id
+        # if level: exercise.level_id = level.id
         if subject: exercise.subject_id = subject.id
         if exercise_type: exercise.type_id = exercise_type.id
 
@@ -72,7 +70,7 @@ def crud(pk):
         search = request.args.get('search', '').strip()
         subject_id = request.args.get('subject', '').strip()
         type_id = request.args.get('type', '').strip()
-        level_id = request.args.get('level', '').strip()
+        # level_id = request.args.get('level', '').strip()
 
         query = Exercise.query
         if search:
@@ -81,8 +79,8 @@ def crud(pk):
             query = query.filter(Exercise.subject_id == subject_id)
         if type_id and type_id != "all":
             query = query.filter(Exercise.type_id == type_id)
-        if level_id and level_id != "all":
-            query = query.filter(Exercise.level_id == level_id)
+        # if level_id and level_id != "all":
+        #     query = query.filter(Exercise.level_id == level_id)
 
         pagination = query.order_by(Exercise.id.desc()).paginate(page=page, per_page=per_page, error_out=False)
         return jsonify({
@@ -172,10 +170,10 @@ def block_text(pk):
             return jsonify({"success": False, "msg": "Invalid exercise or component"}), 400
 
         subject = Subject.query.get(exercise.subject_id)
-        level = SubjectLevel.query.get(exercise.level_id)
+        # level = SubjectLevel.query.get(exercise.level_id)
         exercise_type = ExerciseTypes.query.get(exercise.type_id)
 
-        if not subject or not level or not exercise_type:
+        if not subject or not exercise_type:
             return jsonify({"success": False, "msg": "Invalid subject, level, or type"}), 400
 
         if method == "PUT":
@@ -213,7 +211,7 @@ def block_text(pk):
                         order=word_index,
                         type_id=exercise_type.id,
                         subject_id=subject.id,
-                        level_id=level.id,
+                        # level_id=level.id,
                         status=status
                     )
                     db.session.add(answer)
@@ -245,7 +243,7 @@ def block_text(pk):
                     order=word.get('index'),
                     type_id=exercise_type.id,
                     subject_id=subject.id,
-                    level_id=level.id
+                    # level_id=level.id
                 )
                 db.session.add(answer)
 
@@ -300,7 +298,7 @@ def block_question(pk):
         return jsonify({"success": False, "msg": "Component not found"}), 404
 
     subject = Subject.query.get(exercise.subject_id)
-    level = SubjectLevel.query.get(exercise.level_id)
+    # level = SubjectLevel.query.get(exercise.level_id)
     exercise_type = ExerciseTypes.query.get(exercise.type_id)
 
     img_info = None
@@ -383,7 +381,7 @@ def block_question(pk):
                 answer = ExerciseAnswers(
                     exercise_id=exercise.id,
                     subject_id=subject.id,
-                    level_id=level.id,
+                    # level_id=level.id,
                     desc=option_text,
                     file_id=file_id,
                     status=option_true,
@@ -404,7 +402,7 @@ def block_question(pk):
         answer = ExerciseAnswers(
             exercise_id=exercise.id,
             subject_id=subject.id,
-            level_id=level.id,
+            # level_id=level.id,
             desc=answer_text,
             type_id=exercise_type.id,
             status=True,

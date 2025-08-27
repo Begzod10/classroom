@@ -1,5 +1,7 @@
-from backend.models.basic_model import *
+from backend.models.basic_model import db
 from datetime import datetime
+from sqlalchemy import Column, Integer, String, ForeignKey, Text, Date, DateTime, Boolean
+from sqlalchemy.orm import relationship
 
 
 class StudentQuestion(db.Model):
