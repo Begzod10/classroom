@@ -11,3 +11,4 @@ class Room(db.Model):
     deleted = db.Column(db.Boolean, default=False)
     old_id = db.Column(db.Integer, unique=True)
     turon_old_id = db.Column(db.Integer, unique=True)
+    turon_id = db.Column(db.Integer, unique=True, nullable=True)

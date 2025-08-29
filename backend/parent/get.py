@@ -24,7 +24,7 @@ def parent_list(location_id, deleted):
 
 @get_parent_bp.route('/student_attendance_dates/<platform_id>', methods=['GET'])
 def student_attendance_dates(platform_id):
-    response = requests.get(f"{gennis_server_url}/api/student_attendance_dates_classroom/{platform_id}",
+    response = requests.get(f"{gennis_server_url}/api/parent/student_attendance_dates_classroom/{platform_id}",
                             headers={
                                 'Content-Type': 'application/json'
                             })
@@ -34,7 +34,7 @@ def student_attendance_dates(platform_id):
 
 @get_parent_bp.route('/student_group_list/<platform_id>/<int:year>/<int:month>', methods=['GET'])
 def student_group_list(platform_id, year, month):
-    response = requests.get(f"{gennis_server_url}/api/get_student_group_list/{platform_id}/{year}/{month}",
+    response = requests.get(f"{gennis_server_url}/api/parent/get_student_group_list/{platform_id}/{year}/{month}",
                             headers={
                                 'Content-Type': 'application/json'
                             })
@@ -48,19 +48,19 @@ def student_attendance(platform_id, group_id, year, month):
     if group_id == "None" or group_id == None:
         if year == None:
             response = requests.get(
-                f"{gennis_server_url}/api/get_student_attendance_days_list/{platform_id}/",
+                f"{gennis_server_url}/api/parent/get_student_attendance_days_list/{platform_id}/",
                 headers={
                     'Content-Type': 'application/json'
                 })
         else:
             response = requests.get(
-                f"{gennis_server_url}/api/get_student_attendance_days_list/{platform_id}/{group_id}/{year}/{month}",
+                f"{gennis_server_url}/api/parent/get_student_attendance_days_list/{platform_id}/{group_id}/{year}/{month}",
                 headers={
                     'Content-Type': 'application/json'
                 })
     else:
         response = requests.get(
-            f"{gennis_server_url}/api/get_student_attendance_days_list/{platform_id}/{group_id}/{year}/{month}",
+            f"{gennis_server_url}/api/parent/get_student_attendance_days_list/{platform_id}/{group_id}/{year}/{month}",
             headers={
                 'Content-Type': 'application/json'
             })
@@ -71,7 +71,7 @@ def student_attendance(platform_id, group_id, year, month):
 @get_parent_bp.route('/student_payments/<platform_id>', methods=['GET'])
 def student_payments(platform_id):
     response = requests.get(
-        f"{gennis_server_url}/api/student_payments_list/{platform_id}",
+        f"{gennis_server_url}/api/parent/student_payments_list/{platform_id}",
         headers={
             'Content-Type': 'application/json'
         })
@@ -82,7 +82,7 @@ def student_payments(platform_id):
 @get_parent_bp.route('/student_tests_data/<int:group_id>', methods=['GET'])
 def student_tests_data(group_id):
     response = requests.get(
-        f"{gennis_server_url}/api/filter_datas_in_group_classroom/{group_id}",
+        f"{gennis_server_url}/api/group_classroom_test/filter_datas_in_group_classroom/{group_id}",
         headers={
             'Content-Type': 'application/json'
         })
@@ -97,7 +97,7 @@ def student_tests(group_id, month, year):
     year = int(year)
 
     response = requests.get(
-        f"{gennis_server_url}/api/filter_test_classroom/{group_id}/{month}/{year}",
+        f"{gennis_server_url}/api/parent/filter_test_classroom/{group_id}/{month}/{year}",
         headers={'Content-Type': 'application/json'}
     )
     datas_response = response.json()

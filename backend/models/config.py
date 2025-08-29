@@ -10,7 +10,6 @@ DEBUG = True
 DB_USER = os.getenv('FLASK_DB_USER', 'postgres')
 DB_PASSWORD = os.getenv('FLASK_DB_PASSWORD', '123')
 DB_HOST = os.getenv('DB_HOST', 'localhost:5432')
-# DB_NAME = os.getenv('DB_NAME', 'postgres')
 DB_NAME = os.getenv('FLASK_DB_NAME', 'classroom')
 database_path = 'postgresql://{}:{}@{}/{}'.format(DB_USER, DB_PASSWORD, DB_HOST, DB_NAME)
 SEND_FILE_MAX_AGE_DEFAULT = timedelta(hours=12)

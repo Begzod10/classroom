@@ -9,6 +9,7 @@ import json
 from flask import Blueprint
 from backend.configs import api, gennis_server_url, turon_server_url
 from flasgger import swag_from
+import requests
 
 subject_bp = Blueprint('subject_folder', __name__)
 
@@ -27,6 +28,7 @@ def subject_list():
         subjects = Subject.query.filter(
             or_(Subject.disabled == False, Subject.disabled == None, Subject.levels != None)).order_by(
             Subject.id).all()
+        # requests.post(f"{gennis_server_url}/api/classroom/subjects_add", json={"subjects": iterate_models(subjects)})
     elif user.role.type == "student":
         student = Student.query.filter(Student.user_id == user.id).first()
         groups = db.session.query(Group).join(Group.student).options(contains_eager(Group.student)).filter(
@@ -40,13 +42,18 @@ def subject_list():
                 subject_list.append(subject.subject_id)
         else:
             for gr in groups:
-                if gr.subject_id not in subject_list:
-                    subject_list.append(gr.subject_id)
+                if gr.platform_id:
+                    if gr.subject_id not in subject_list:
+                        subject_list.append(gr.subject_id)
+                else:
+                    for sub in gr.subjects:
+                        if sub.id not in subject_list:
+                            subject_list.append(sub.id)
 
         subjects = Subject.query.filter(Subject.id.in_(sub for sub in subject_list)).order_by(Subject.id).all()
     else:
         teacher = Teacher.query.filter(Teacher.user_id == user.id).first()
-        if user.system_name != "school":
+        if user.system_name != "turon":
 
             groups = db.session.query(Group).join(Group.teacher).options(contains_eager(Group.teacher)).filter(
                 Teacher.id == teacher.id).all()
@@ -58,6 +65,7 @@ def subject_list():
         else:
             subjects = Subject.query.filter(Subject.id.in_(sub.id for sub in teacher.subjects)).order_by(
                 Subject.id).all()
+
     return jsonify({
         "subjects": iterate_models(subjects),
     })

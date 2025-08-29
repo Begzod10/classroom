@@ -29,7 +29,7 @@ def login():
     user = User.query.filter(User.username == username, system_name == system_name).first()
     if system_name and username != "metod":
         if system_name == "gennis":
-            response = requests.post(f"{gennis_server_url}/api/login2", headers={
+            response = requests.post(f"{gennis_server_url}/api/base/login", headers={
                 'Content-Type': 'application/json'
             }, json={
                 "username": username,
@@ -37,25 +37,33 @@ def login():
             })
             user_get = response.json()['user'] if 'user' in response.json() else {}
             location = response.json()['location'] if 'location' in response.json() else {}
+
+            if not user_get:
+                return {"msg": "Username yoki parol noto'g'ri", "success": False}, 200
+            if not user:
+                user = check_user_gennis(user_get)
+
+            if user_get['parent']:
+                check_user_gennis(user_get)
             if location:
                 exist_location = Location.query.filter(Location.platform_id == location['value']).first()
                 if not exist_location:
                     exist_location = Location(name=location['name'], platform_id=location['value'])
                     exist_location.add_commit()
 
-                exist_branch = Branch.query.filter(
-                    Branch.location_id == exist_location.id,
-                    Branch.name.ilike(f"%{system_name}%")
-                ).first()
-
-                if not exist_branch:
-                    exist_branch = Branch(
-                        name=f"{system_name} branch",  # yoki kelgan system_name bilan nom berasan
-                        location_id=exist_location.id,
-                        campus_name=location.get("name", ""),  # agar location JSON’da bo‘lsa
-                    )
-                    db.session.add(exist_branch)
-                    db.session.commit()
+                # exist_branch = Branch.query.filter(
+                #     Branch.location_id == exist_location.id,
+                #     Branch.name.ilike(f"%{system_name}%")
+                # ).first()
+                #
+                # if not exist_branch:
+                #     exist_branch = Branch(
+                #         name=f"{system_name} branch",  # yoki kelgan system_name bilan nom berasan
+                #         location_id=exist_location.id,
+                #         campus_name=location.get("name", ""),  # agar location JSON’da bo‘lsa
+                #     )
+                #     db.session.add(exist_branch)
+                #     db.session.commit()
 
                 # User’ga branch id ni bog‘lash (agar kerak bo‘lsa)
                 if user:
@@ -71,6 +79,7 @@ def login():
             if user_get['parent']:
                 pprint(user_get)
                 check_user_gennis(user_get)
+
         else:
             response = requests.post(f"{turon_server_url}/api/token/", headers={
                 'Content-Type': 'application/json'
@@ -79,17 +88,20 @@ def login():
                 "password": password,
             })
             user_get = response.json()['user'] if 'user' in response.json() else {}
+            print(user_get)
             if not user_get:
                 return {"msg": "Username yoki parol noto'g'ri", "success": False}, 200
-            if not user:
-                user = check_user_turon(user_get)
+
+            user = check_user_turon(user_get)
         if user:
             if user.role.type != "methodist" and user.role.type != "parent":
                 if system_name == "gennis":
-                    response = requests.get(f"{gennis_server_url}/api/send_user_data/{user.platform_id}", headers={
-                        'Content-Type': 'application/json'
-                    })
+                    response = requests.get(f"{gennis_server_url}/api/classroom/send_user_data/{user.username}",
+                                            headers={
+                                                'Content-Type': 'application/json'
+                                            })
                     user_get = response.json()['user']
+
                     add_gennis_user_data(user_get, user)
 
         if not user.classroom_user_id:
@@ -144,13 +156,15 @@ def refresh():
     if user.role.type != "methodist" and user.system_name != "pisa":
         if user.system_name == "gennis":
             if user.teacher:
-                response = requests.get(f"{gennis_server_url}/api/get_teacher_balance/{user.platform_id}", headers={
-                    'Content-Type': 'application/json'
-                })
+                response = requests.get(f"{gennis_server_url}/api/teacher/get_teacher_balance/{user.platform_id}",
+                                        headers={
+                                            'Content-Type': 'application/json'
+                                        })
             else:
-                response = requests.get(f"{gennis_server_url}/api/get_student_balance/{user.platform_id}", headers={
-                    'Content-Type': 'application/json'
-                })
+                response = requests.get(f"{gennis_server_url}/api/student/get_student_balance/{user.platform_id}",
+                                        headers={
+                                            'Content-Type': 'application/json'
+                                        })
         else:
 
             if user.teacher:
@@ -181,7 +195,7 @@ def refresh():
 @basic_bp.route(f'send_user/<token>')
 @cross_origin()
 def send_user(token):
-    response = requests.get(f"{gennis_server_url}/api/get_user", headers={
+    response = requests.get(f"{gennis_server_url}/api/base/get_user", headers={
         "Authorization": "Bearer " + token,
         'Content-Type': 'application/json'
     })

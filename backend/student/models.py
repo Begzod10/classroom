@@ -1,6 +1,7 @@
 import datetime
 
-from backend.models.basic_model import db, Column, relationship, Integer, String, ForeignKey, Float, Boolean, JSON, \
+from backend.models.basic_model import db, relationship
+from sqlalchemy import desc, JSON, Float, Column, Integer, String, ForeignKey, Float, Boolean, JSON, \
     func, DateTime
 
 

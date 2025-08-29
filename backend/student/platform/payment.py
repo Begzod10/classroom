@@ -13,6 +13,6 @@ payment_bp = Blueprint('payment', __name__)
 def student_attendance_info():
     user = User.query.filter(User.classroom_user_id == get_jwt_identity()).first()
     if user.system_name == "gennis":
-        response = requests.get(f"{gennis_server_url}/api/student_attendance_info_classroom/{user.platform_id}")
+        response = requests.get(f"{gennis_server_url}/api/student/student_attendance_info_classroom/{user.platform_id}")
         return jsonify(response.json())
     pass

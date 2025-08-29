@@ -1,7 +1,8 @@
 import datetime
 
-from backend.models.basic_model import db, Column, relationship, Integer, String, ForeignKey, Float, Boolean, JSON, \
-    DateTime
+from backend.models.basic_model import db
+from sqlalchemy import Column, Integer, String, ForeignKey, JSON, DateTime, Boolean, Float
+from sqlalchemy.orm import relationship
 
 
 class Subject(db.Model):
@@ -66,6 +67,7 @@ class SubjectLevel(db.Model):
     groups = relationship('Group', backref="subject_level", order_by="Group.id")
     chapters = relationship('Chapter', backref="subject_level", order_by="Chapter.id")
     student_question = relationship('StudentQuestion', backref="subject_level", order_by="StudentQuestion.id")
+    system_name = Column(String, default="gennis")
 
     def convert_json(self, entire=False):
         return {

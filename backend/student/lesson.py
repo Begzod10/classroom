@@ -22,7 +22,8 @@ def finish_lesson(lesson_id):
     identity = get_jwt_identity()
     user = User.query.filter(User.classroom_user_id == identity).first()
     student = Student.query.filter(Student.user_id == user.id).first()
-    student_lesson = StudentLesson.query.filter(StudentLesson.id == lesson_id,
+
+    student_lesson = StudentLesson.query.filter(StudentLesson.lesson_id == lesson_id,
                                                 StudentLesson.student_id == student.id).first()
     update_student_datas(student, student_lesson.lesson_id)
     return jsonify({
@@ -169,7 +170,7 @@ def student_lesson_complete():
                 else:
                     exercise_answer = ExerciseAnswers.query.filter_by(
                         block_id=block.id,
-                        desc=ans['text'][0]
+                        desc=ans['text'][0] if type(ans['text']) == list else ans['text']
                     ).first()
 
                     is_correct = ans['text'][0] == ans['value']
@@ -207,29 +208,28 @@ def reset_lesson(archive_id):
     })
 
 
-@student_lesson_bp.route(f'/add/comment', methods=['POST'])
+@student_lesson_bp.route(f'/add_comment', methods=['POST'])
 def add_comment():
-    # Parse JSON request data
     data = request.get_json()
 
-    # Validate required fields
     required_fields = ["student_id", "lesson_id", "comment"]
     if not all(field in data for field in required_fields):
         return jsonify({"error": "Missing required fields"}), 400
 
-    # Extract data fields
     student_id = data.get("student_id")
     lesson_id = data.get("lesson_id")
-    student = Student.query.filter(Student.user_id == student_id).first()
+    user = User.query.filter_by(id=student_id).first()
+    student = Student.query.filter_by(user_id=user.id).first()
     student_lesson = StudentLesson.query.filter(StudentLesson.student_id == student.id,
                                                 StudentLesson.lesson_id == lesson_id).first()
     comment = data.get("comment")
-    ball = data.get("ball", 0)  # default to 0 if not provided
-    date = data.get("date", datetime.datetime.now())  # default to current datetime if not provided
+    ball = data.get("ball", 0)
+    date = data.get("date", datetime.datetime.now())
     lesson = Lesson.query.filter(Lesson.id == lesson_id).first()
-    group = db.session.query(Student).join(Student.groups).filter(Student.id == student.id,
-                                                                  Group.subject_id == lesson.subject_id).first()
-    # Create new comment object
+    if student.user.platform_id:
+       group = db.session.query(Group).join(Student.groups).filter(Student.id == student.id,Group.subject_id == lesson.subject_id).first()
+    else:
+        group = db.session.query(Group).join(Student.groups).filter(Student.id == student.id).first()
     new_comment = StudentCommentForLesson(
         student_id=student.id,
         lesson_id=lesson_id,
