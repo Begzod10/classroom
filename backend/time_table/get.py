@@ -74,7 +74,7 @@ def timetable_lessons():
 
     time_tables = []
 
-    # ✅ faqat week_id berilsa
+
     if week_id and date_ls is None:
         today = date.today()
         today_weekday = today.isoweekday()
@@ -93,7 +93,7 @@ def timetable_lessons():
             "rooms": rooms_info
         })
 
-    # ✅ ham week_id, ham date bo‘lmasa → butun hafta
+
     elif date_ls is None and week_id is None:
         today = date.today()
         start_week = today - timedelta(days=today.weekday())  # dushanba
@@ -111,7 +111,7 @@ def timetable_lessons():
                 "rooms": rooms_info
             })
 
-    # ✅ faqat date berilsa
+
     elif date_ls:
         weekday_name = WEEK_DAYS[date_ls.weekday()]
         rooms_info = build_rooms_info(
