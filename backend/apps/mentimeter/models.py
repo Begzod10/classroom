@@ -60,21 +60,49 @@ class Slide(Base):
 class SlideItem(Base):
     __tablename__ = "slide_item"
     id = Column(Integer, primary_key=True)
-    name = Column(String)
+    heading = Column(String)
+    subheading = Column(String)
+    label = Column(String)
+    image_type = Column(String)
+    video = Column(String)
+    file_id = Column(Integer, ForeignKey('file.id'))
+    file = relationship("File", backref="slide_item")
     slide_id = Column(Integer, ForeignKey('slide.id'))
     slide = relationship("Slide", backref="slide_item")
-    slide_type_id = Column(Integer, ForeignKey('slide_type.id'))
-    slide_type = relationship("SlideType", backref="slide_item")
-    layout = Column(JSON)
+    slide_type = Column(String)
+    slide_exercise_id = Column(Integer, ForeignKey('slide_exercise.id'))
+    slide_exercise = relationship("SlideExercise", backref="slide_item")
+    design = Column(JSON)
     order = Column(Integer)
+    extra_design = Column(JSON)
 
     def convert_json(self, entire=False):
-        return {
+        """
+        Convert SlideItem to JSON representation.
+
+        :param entire: bool - if True, include all nested details (like exercise, extraDesign)
+        :return: dict
+        """
+        data = {
             "id": self.id,
-            "name": self.name,
-            "layout": self.layout,
-            "slide_type": self.slide_type.convert_json()
+            "slide_id": self.slide_id,
+            "slide_type": self.slide_type,
+            "heading": getattr(self, "heading", ""),
+            "subheading": getattr(self, "subheading", ""),
+            "image": getattr(self, "image", ""),
+            "video": getattr(self, "video", ""),
+            "imageType": getattr(self, "image_type", "center"),
+            "label": getattr(self, "label", ""),
+            "order": getattr(self, "order", 0),
+            "design": getattr(self, "design", {})
         }
+
+        if entire:
+            # Optionally include any extra relationships or nested data here
+            data["created_at"] = getattr(self, "created_at", None)
+            data["updated_at"] = getattr(self, "updated_at", None)
+
+        return data
 
     def add_commit(self):
         db.session.add(self)
@@ -119,38 +147,6 @@ class SlideExerciseAnswer(Base):
         return {"id": self.id, "name": self.name}
 
 
-class SlideBlock(Base):
-    __tablename__ = "slide_block"
-    id = Column(Integer, primary_key=True)
-    heading = Column(String)
-    subheading = Column(String)
-    label = Column(String)
-    slide_item_id = Column(Integer, ForeignKey('slide_item.id'))
-    slide_item = relationship("SlideItem", backref="slide_block")
-    slide_exercise_id = Column(Integer, ForeignKey('slide_exercise.id'))
-    slide_exercise = relationship("SlideExercise", backref="slide_block")
-    layout = Column(JSON)
-
-    def convert_json(self, entire=False):
-        return {
-            "id": self.id,
-            "heading": self.heading,
-            "subheading": self.subheading,
-            "label": self.label,
-            "layout": self.layout,
-            "slide_item": self.slide_item.convert_json(),
-            "slide_exercise": self.slide_exercise.convert_json()
-        }
-
-    def add_commit(self):
-        db.session.add(self)
-        db.session.commit()
-
-    def delete_commit(self):
-        db.session.delete(self)
-        db.session.commit()
-
-
 class StudentSlide(Base):
     __tablename__ = "student_slide"
     id = Column(Integer, primary_key=True)
@@ -159,29 +155,6 @@ class StudentSlide(Base):
     student_id = Column(Integer, ForeignKey('student.id'))
     student = relationship("Student", backref="student_slide")
     date = Column(DateTime, default=datetime.now())
-
-    def convert_json(self, entire=False):
-        return {
-            "id": self.id,
-            "slide_block": self.slide_block.convert_json(),
-            "student": self.student.convert_json()
-        }
-
-
-class StudentSlideBlock(Base):
-    __tablename__ = "student_slide_block"
-    id = Column(Integer, primary_key=True)
-    slide_block_id = Column(Integer, ForeignKey('slide_block.id'))
-    slide_block = relationship("SlideBlock", backref="student_slide_block")
-    student_id = Column(Integer, ForeignKey('student.id'))
-    student = relationship("Student", backref="student_slide_block")
-    date = Column(DateTime, default=datetime.now())
-    slide_id = Column(Integer, ForeignKey('slide.id'))
-    slide = relationship("Slide", backref="student_slide_block")
-    student_slide_id = Column(Integer, ForeignKey('student_slide.id'))
-    student_slide = relationship("StudentSlide", backref="student_slide_block")
-    true_answer = Column(Integer)
-    percentage = Column(Integer)
 
     def convert_json(self, entire=False):
         return {
@@ -212,3 +185,29 @@ class StudentSlideExercise(Base):
         return {
             "id": self.id,
         }
+
+
+class SlideBlock(Base):
+    __tablename__ = "slide_block"
+    id = Column(Integer, primary_key=True)
+
+    slide_item_id = Column(Integer, ForeignKey('slide_item.id'))
+    slide_item = relationship("SlideItem", backref="slide_block")
+
+    layout = Column(JSON)
+
+
+class StudentSlideBlock(Base):
+    __tablename__ = "student_slide_block"
+    id = Column(Integer, primary_key=True)
+    slide_block_id = Column(Integer, ForeignKey('slide_block.id'))
+    slide_block = relationship("SlideBlock", backref="student_slide_block")
+    student_id = Column(Integer, ForeignKey('student.id'))
+    student = relationship("Student", backref="student_slide_block")
+    date = Column(DateTime, default=datetime.now())
+    slide_id = Column(Integer, ForeignKey('slide.id'))
+    slide = relationship("Slide", backref="student_slide_block")
+    student_slide_id = Column(Integer, ForeignKey('student_slide.id'))
+    student_slide = relationship("StudentSlide", backref="student_slide_block")
+    true_answer = Column(Integer)
+    percentage = Column(Integer)

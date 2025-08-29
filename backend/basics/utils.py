@@ -9,9 +9,13 @@ from backend.parent.models import Parent
 
 
 def check_group_info(gr, type="gennis", user_id=None):
+    """
+    Ensure the group exists in the database and return it along with its subjects.
+    """
     group_filter = Group.platform_id if type == "gennis" else Group.turon_id
     group = Group.query.filter(group_filter == gr['id']).first()
 
+    # Determine the subject(s)
     if type == "gennis":
         subject_name = gr['subjects']['name']
         subject = Subject.query.filter_by(name=subject_name).first()
@@ -22,42 +26,41 @@ def check_group_info(gr, type="gennis", user_id=None):
         else:
             subject = None
 
+    # Create group if it doesn't exist
     if not group:
         group_data = {
             "name": gr['name'],
-            "price": gr['price'],
-            "teacher_salary": gr['teacher_salary'],
+            "price": gr.get('price', 0),
+            "teacher_salary": gr.get('teacher_salary', 0),
             "subject_id": subject.id if subject else None
         }
 
         if type == "gennis":
             group = Group(platform_id=gr['id'], **group_data)
         else:
-
             teacher = Teacher.query.filter_by(user_id=user_id).first()
-            if teacher:
-                group = Group(turon_id=gr['id'], teacher_id=teacher.id, **group_data)
+            group = Group(turon_id=gr['id'], teacher_id=teacher.id if teacher else None, **group_data)
 
-                for sub in gr['subjects']:
-                    subject = Subject.query.filter_by(name=sub['name']).first()
-                    if not subject:
-                        subject = Subject(name=sub['name'])
-                        db.session.add(subject)
-                    if subject not in group.subjects:
-                        group.subjects.append(subject)
+            for sub in gr['subjects']:
+                subject = Subject.query.filter_by(name=sub['name']).first()
+                if not subject:
+                    subject = Subject(name=sub['name'])
+                    db.session.add(subject)
+                if subject not in group.subjects:
+                    group.subjects.append(subject)
 
         db.session.add(group)
 
+    # Update existing group
     else:
-        group.teacher_salary = gr['teacher_salary']
-        group.price = gr['price']
-        group.name = gr['name']
+        group.teacher_salary = gr.get('teacher_salary', group.teacher_salary)
+        group.price = gr.get('price', group.price)
+        group.name = gr.get('name', group.name)
 
         if type == "turon":
             teacher = Teacher.query.filter_by(user_id=user_id).first()
-            if teacher:
-                if teacher and group.teacher_id != teacher.id:
-                    group.teacher_id = teacher.id
+            if teacher and group.teacher_id != teacher.id:
+                group.teacher_id = teacher.id
 
             current_subjects = []
             for sub in gr['subjects']:
@@ -69,12 +72,13 @@ def check_group_info(gr, type="gennis", user_id=None):
                 if subject not in group.subjects:
                     group.subjects.append(subject)
 
+            # Remove old subjects
             for subj in list(group.subjects):
                 if subj not in current_subjects:
                     group.subjects.remove(subj)
 
     db.session.commit()
-    return group, (gr['subjects'])
+    return group, gr.get('subjects', [])
 
 
 def check_user_gennis(user_get):
@@ -188,8 +192,9 @@ def check_user_gennis(user_get):
 
 
 def check_user_turon(info):
-    print(info)
-
+    """
+    Synchronize a Turon user (student or teacher) and their groups & subjects.
+    """
     role_map = {"teacher": "b00c11a31", "student": "a43c33b82"}
     role = Role.query.filter_by(type=info['role'], role=role_map[info['role']]).first()
 
@@ -202,11 +207,11 @@ def check_user_turon(info):
             username=username,
             name=info['name'],
             surname=info['surname'],
-            balance=info['balance'],
+            balance=info.get('balance', 0),
             turon_id=info['id'],
             role_id=role.id,
             age=datetime.now().year - int(info['birth_date'][:4]),
-            father_name=info['father_name'],
+            father_name=info.get('father_name'),
             born_day=info['birth_date'][:2],
             born_month=info['birth_date'][5:7],
             born_year=info['birth_date'][:4],
@@ -221,6 +226,7 @@ def check_user_turon(info):
         user.parent_phone = info.get("parent_phone") or info.get("parent_number")
         user.phone = info['phone_number']
 
+    # Create or get role instance
     if info['role'] == "student":
         role_instance = Student.query.filter_by(user_id=user.id).first()
         if not role_instance:
@@ -233,13 +239,17 @@ def check_user_turon(info):
             db.session.add(role_instance)
 
     current_groups = []
-    for gr in info['groups']:
+    for gr in info.get('groups', []):
         group, subjects = check_group_info(gr, type="turon", user_id=user.id)
+        if not group:
+            continue  # Skip if group creation failed
+
         current_groups.append(group)
 
         if group not in role_instance.groups:
             role_instance.groups.append(group)
 
+        # Handle subjects for students
         if info['role'] == "student":
             current_subject_ids = []
             for sub in subjects:
@@ -253,15 +263,16 @@ def check_user_turon(info):
                     if not exists:
                         db.session.add(StudentSubject(subject_id=subject.id, student_id=role_instance.id))
 
+            # Remove old subjects
             old_subjects = StudentSubject.query.filter_by(student_id=role_instance.id).all()
             for ss in old_subjects:
                 if ss.subject_id not in current_subject_ids:
                     db.session.delete(ss)
 
+        # Handle subjects for teachers
         else:
             current_subjects = []
             for sub in info.get("subjects", []):
-                print(sub['name'])
                 subject = Subject.query.filter_by(name=sub['name']).first()
                 if subject:
                     current_subjects.append(subject)
@@ -272,16 +283,18 @@ def check_user_turon(info):
                 if subj not in current_subjects:
                     role_instance.subjects.remove(subj)
 
+    # Remove old groups
     for gr in list(role_instance.groups):
         if gr not in current_groups:
             role_instance.groups.remove(gr)
             if info['role'] == "student":
-                student_subject = StudentSubject.query.filter_by(
-                    subject_id=gr.subject_id,
-                    student_id=role_instance.id
-                ).first()
-                if student_subject:
-                    db.session.delete(student_subject)
+                for sub in gr.subjects:
+                    student_subject = StudentSubject.query.filter_by(
+                        subject_id=sub.id,
+                        student_id=role_instance.id
+                    ).first()
+                    if student_subject:
+                        db.session.delete(student_subject)
 
     db.session.commit()
     return user
