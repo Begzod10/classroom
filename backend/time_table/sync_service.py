@@ -28,6 +28,7 @@ def sync_rooms():
         if not room:
             room = Room(turon_id=int(item["id"]))
         room.name = item.get("name")
+        room.order = item.get("order")
         room.branch_id = Branch.query.filter_by(turon_id=int(item["branch"])).first().id
         db.session.add(room)
     db.session.commit()

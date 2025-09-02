@@ -12,3 +12,4 @@ class Room(db.Model):
     old_id = db.Column(db.Integer, unique=True)
     turon_old_id = db.Column(db.Integer, unique=True)
     turon_id = db.Column(db.Integer, unique=True, nullable=True)
+    order = db.Column(db.Integer, unique=True, nullable=True)

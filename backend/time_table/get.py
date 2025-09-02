@@ -1,5 +1,6 @@
 from flask import Blueprint, request, jsonify
 from datetime import date, datetime, timedelta
+from sqlalchemy import func
 from backend.time_table.sync_service import sync_branches, sync_rooms, sync_weekdays, sync_timetable, sync_hours
 
 from backend.room.models import Room
@@ -69,7 +70,14 @@ def timetable_lessons():
         except ValueError:
             week_id = None
 
-    rooms = Room.query.filter_by(branch_id=branch.id, deleted=False).all()
+    # rooms = Room.query.filter_by(branch_id=branch.id, deleted=False).all()
+
+    rooms = (
+        Room.query
+        .filter_by(branch_id=branch.id, deleted=False)
+        .order_by(func.coalesce(Room.order, Room.id))  # order bo‘lsa order, bo‘lmasa id
+        .all()
+    )
     hours = Hours.query.order_by(Hours.order).all()
 
     time_tables = []
