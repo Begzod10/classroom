@@ -1,6 +1,6 @@
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
-from sqlalchemy import Column, Integer, String, DateTime, Boolean, ForeignKey
+from sqlalchemy import Column, Integer, String, DateTime, Boolean, ForeignKey, JSON, Table
 from sqlalchemy.orm import contains_eager
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func, functions
@@ -58,6 +58,8 @@ class User(db.Model):
     password = Column(String)
     platform_id = Column(Integer)
     age = Column(Integer)
+    branch_id = Column(Integer, ForeignKey("branch.id"))
+    branch = relationship("Branch", backref="users")
     student = relationship('Student', backref='user', uselist=False, order_by="Student.id", lazy="select")
     parent = relationship('Parent', backref='user', uselist=False, order_by="Parent.id", lazy="select")
     teacher = relationship("Teacher", backref="user", order_by="Teacher.id", lazy="select")
@@ -92,12 +94,18 @@ class User(db.Model):
         month = self.born_month
         if len(str(self.born_day)) == 1:
             month = "0" + str(self.born_month)
+        id2 = None
+        if self.student:
+            id2 = self.student.id
+        if self.teacher:
+            id2 = self.teacher[0].id
         return {"id": self.id, "name": self.name, "surname": self.surname, "username": self.username,
-            "balance": self.balance, "age": self.age, "role": self.role.role, "father_name": self.father_name,
-            "parent_phone": self.parent_phone, "born_date": f'{day}-{month}-{self.born_year}', "phone": self.phone,
-            "platform_id": self.platform_id, "location_id": self.location_id,
-            "platform_location": self.location.platform_id if self.location else None, "observer": self.observer,
-            "img_url": img, "system_name": self.system_name, }
+                "balance": self.balance, "age": self.age, "role": self.role.role, "father_name": self.father_name,
+                "parent_phone": self.parent_phone, "born_date": f'{day}-{month}-{self.born_year}', "phone": self.phone,
+                "platform_id": self.platform_id, "location_id": self.location_id,
+                "platform_location": self.location.platform_id if self.location else None, "observer": self.observer,
+                "img_url": img, "system_name": self.system_name,
+                'id2': id2}
 
     def add_commit(self):
         db.session.add(self)
@@ -120,6 +128,7 @@ class Student(db.Model):
     representative_surname = Column(String)
     student_comments = relationship("StudentCommentForLesson", backref="student", order_by="StudentCommentForLesson.id")
     parent_get = relationship('Parent', secondary="parent_child", backref="student", lazy="select")
+    turon_id = Column(Integer)
 
     def add_commit(self):
         db.session.add(self)
@@ -131,7 +140,7 @@ class Student(db.Model):
     def convert_json(self):
         info = {"id": self.user.id, "name": self.user.name, "surname": self.user.surname,
 
-        }
+                }
         return info
 
 
@@ -151,26 +160,27 @@ class Group(db.Model):
     subjects = relationship("Subject",
                             secondary="turon_group_subject",
                             backref="turon_groups")
+
     def convert_json(self, entire=False, user=None):
         teacher = Teacher.query.filter(Teacher.id == self.teacher_id).first()
         student_subject = StudentSubject.query.filter(StudentSubject.student_id == user.student.id,
                                                       StudentSubject.subject_id == self.subject_id).first() if user and user.student else None
 
         info = {"id": self.id, "name": self.name, "price": self.price, "students_num": len(self.student),
-            "platform_id": self.platform_id, "subject": {"id": self.subject.id if self.subject else None,
-                "name": self.subject.name if self.subject else None,
-                "finished": student_subject.finished if student_subject else None,
-                "percentage": student_subject.percentage if student_subject else None},
-            "course": self.subject_level.convert_json() if self.subject_level else {},
-            "teacher": {"id": teacher.user_id if teacher else None, "name": teacher.user.name if teacher else None,
-                "surname": teacher.user.surname if teacher else None,
-                "salary": self.teacher_salary if teacher else None}, "students": [],
+                "platform_id": self.platform_id, "subject": {"id": self.subject.id if self.subject else None,
+                                                             "name": self.subject.name if self.subject else None,
+                                                             "finished": student_subject.finished if student_subject else None,
+                                                             "percentage": student_subject.percentage if student_subject else None},
+                "course": self.subject_level.convert_json() if self.subject_level else {},
+                "teacher": {"id": teacher.user_id if teacher else None, "name": teacher.user.name if teacher else None,
+                            "surname": teacher.user.surname if teacher else None,
+                            "salary": self.teacher_salary if teacher else None}, "students": [],
                 "subjects": [
                     {"id": sub.id, "name": sub.name}
                     for sub in self.subjects
                 ],
 
-        }
+                }
         for subject in self.subjects:
             print(subject.name)
         if self.subject_level:
@@ -194,9 +204,10 @@ class Group(db.Model):
                     db.session.commit()
 
                 student_info = {"id": student.user.id, "name": student.user.name, 'surname': student.user.surname,
-                    "phone": student.user.phone, "parent_phone": student.user.parent_phone,
-                    "balance": student.user.balance, "platform_id": student.user.platform_id,
-                    "color": ["green", "yellow", "red", "navy", "black"][student.debtor] if student.debtor else 0}
+                                "phone": student.user.phone, "parent_phone": student.user.parent_phone,
+                                "balance": student.user.balance, "platform_id": student.user.platform_id,
+                                "color": ["green", "yellow", "red", "navy", "black"][
+                                    student.debtor] if student.debtor else 0}
                 info['students'].append(student_info)
         return info
 
@@ -221,6 +232,8 @@ class Teacher(db.Model):
     __tablename__ = "teacher"
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer, ForeignKey('user.id'))
+    turon_id = Column(Integer)
+    color = Column(String)
     groups = relationship("Group", secondary="teacher_group", backref="teacher", order_by="Group.id", lazy="select")
     subjects = relationship("Subject", secondary="teacher_subject", backref="teacher", order_by="Subject.id")
 
@@ -245,7 +258,7 @@ class File(db.Model):
 
     def convert_json(self, entire=False):
         return {"id": self.id, "url": self.url, "size": self.size, "name": self.file_name, "type_file": self.type_file,
-            "original_name": self.original_name}
+                "original_name": self.original_name}
 
     def add(self):
         db.session.add(self)
@@ -260,4 +273,8 @@ from backend.certificate.models import *
 from backend.student.models import *
 from backend.pisa.models import *
 from backend.parent.models import *
+from backend.branch.models import *
+from backend.room.models import *
+from backend.time_table.models import *
 from backend.apps.mentimeter.models import *
+from backend.flow.models import *

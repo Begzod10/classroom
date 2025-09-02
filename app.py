@@ -27,6 +27,7 @@ from backend.student.views import register_student_routes
 from backend.user.views import register_user_view
 from backend.group.views import register_create_group
 from backend.class_test.views import register_class_test
+from backend.time_table.views import register_create_time_table
 
 from backend.models.views import UserAdmin, SubjectAdmin, RoleAdmin
 
@@ -61,6 +62,7 @@ def create_app():
     register_create_group(api_prefix, app)
     register_mentimeter_views(api_prefix, app)
     register_class_test(app)
+    register_create_time_table(api_prefix, app)
 
     app.config.from_mapping(CELERY=dict(broker_url=os.getenv('CELERY_BROKER_URL', 'redis://localhost:6379/2'),
                                         result_backend=os.getenv('CELERY_RESULT_BACKEND', 'redis://localhost:6379/2'),
