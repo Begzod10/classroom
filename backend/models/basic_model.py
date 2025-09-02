@@ -187,28 +187,43 @@ class Group(db.Model):
             info['course'] = {"id": self.subject_level.id, "name": self.subject_level.name, }
         if self.student:
             for student in self.student:
-                if student.user.platform_id:
-                    exist_student = db.session.query(Student).join(Student.user).options(
-                        contains_eager(Student.user)).filter(User.platform_id == student.user.platform_id).order_by(
-                        User.id).all()
-                else:
-                    exist_student = db.session.query(Student).join(Student.user).options(
-                        contains_eager(Student.user)).filter(User.turon_id == student.user.turon_id).order_by(
-                        User.id).all()
+                if student.user:
+                    if student.user.platform_id:
+                        exist_students = (
+                            db.session.query(Student)
+                            .join(Student.user)
+                            .options(contains_eager(Student.user))
+                            .filter(User.platform_id == student.user.platform_id)
+                            .order_by(User.id.asc())
+                            .all()
+                        )
+                    else:
+                        exist_students = (
+                            db.session.query(Student)
+                            .join(Student.user)
+                            .options(contains_eager(Student.user))
+                            .filter(User.turon_id == student.user.turon_id)
+                            .order_by(User.id.asc())
+                            .all()
+                        )
 
-                if len(exist_student) > 1:
-                    user = User.query.filter(User.id == exist_student[0].user.id).first()
-                    get_student = Student.query.filter(Student.id == exist_student[0].id).first()
-                    db.session.delete(user)
-                    db.session.delete(get_student)
-                    db.session.commit()
+                    if len(exist_students) > 1:
+                        student_to_keep = exist_students[0]
 
-                student_info = {"id": student.user.id, "name": student.user.name, 'surname': student.user.surname,
-                                "phone": student.user.phone, "parent_phone": student.user.parent_phone,
-                                "balance": student.user.balance, "platform_id": student.user.platform_id,
-                                "color": ["green", "yellow", "red", "navy", "black"][
-                                    student.debtor] if student.debtor else 0}
-                info['students'].append(student_info)
+                        for s in exist_students[1:]:
+                            if s.user:
+                                db.session.delete(s.user)
+                            db.session.delete(s)
+
+                        db.session.commit()
+
+                if student.user:
+                    student_info = {"id": student.user.id, "name": student.user.name, 'surname': student.user.surname,
+                                    "phone": student.user.phone, "parent_phone": student.user.parent_phone,
+                                    "balance": student.user.balance, "platform_id": student.user.platform_id,
+                                    "color": ["green", "yellow", "red", "navy", "black"][
+                                        student.debtor] if student.debtor else 0}
+                    info['students'].append(student_info)
         return info
 
     def add_commit(self):

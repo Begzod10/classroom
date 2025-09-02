@@ -53,7 +53,11 @@ def check_group_info(gr, type="gennis", user_id=None):
             group = Group(platform_id=gr['id'], **group_data)
         else:
             teacher = Teacher.query.filter_by(user_id=user_id).first()
-            group = Group(turon_id=gr['id'], teacher_id=teacher.id if teacher else None, **group_data)
+            if teacher:
+                group = Group(turon_id=gr['id'], teacher_id=teacher.id, **group_data)
+            else:
+                group = Group(turon_id=gr['id'], **group_data)
+
 
             for sub in gr['subjects']:
                 subject = Subject.query.filter_by(name=sub['name']).first()

@@ -216,8 +216,16 @@ def check_level(group_id, level_id):
             "msg": f"O'zgartirildi",
             "status": 'success'
         })
-    students = db.session.query(Student).join(Student.groups).options(contains_eager(Student.groups)).filter(
-        Group.id == group_id).order_by(Student.id).all()
+    students = (
+        db.session.query(Student)
+        .join(Student.groups)  # student → groups
+        .join(Student.user)  # student → user
+        .options(contains_eager(Student.groups))
+        .filter(Group.id == group_id)  # kerakli group
+        .filter(User.id.isnot(None))  # user mavjud bo‘lsin
+        .order_by(Student.id)
+        .all()
+    )
 
     student_list = []
     for student in students:
