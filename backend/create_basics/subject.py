@@ -37,25 +37,21 @@ def subject_list():
         groups = db.session.query(Group).join(Group.student).options(contains_eager(Group.student)).filter(
             Student.id == student.id).all()
         subject_list = []
-        # if user.system_name == "school":
-        #     student_subjects = StudentSubject.query.filter(
-        #         StudentSubject.student_id == student.id).order_by(
-        #         StudentSubject.id).all()
-        #     for subject in student_subjects:
-        #         subject_list.append(subject.subject_id)
-        # else:
-        for gr in groups:
-            if gr.platform_id:
-                print(gr.subject_id)
-                if gr.subject_id not in subject_list:
-                    subject_list.append(gr.subject_id)
-            else:
-                print('turonstudent')
-                for sub in gr.subjects:
-                    print(sub.id)
-                    if sub.id not in subject_list:
-                        print(sub.id)
-                        subject_list.append(sub.id)
+        if user.system_name == "school":
+            student_subjects = StudentSubject.query.filter(
+                StudentSubject.student_id == student.id).order_by(
+                StudentSubject.id).all()
+            for subject in student_subjects:
+                subject_list.append(subject.subject_id)
+        else:
+            for gr in groups:
+                if gr.platform_id:
+                    if gr.subject_id not in subject_list:
+                        subject_list.append(gr.subject_id)
+                else:
+                    for sub in gr.subjects:
+                        if sub.id not in subject_list:
+                            subject_list.append(sub.id)
 
         subjects = Subject.query.filter(Subject.id.in_(sub for sub in subject_list)).order_by(Subject.id).all()
     else:

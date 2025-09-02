@@ -28,18 +28,9 @@ def info_level(subject_id, system_name):
                                                SubjectLevel.disabled == False).order_by(SubjectLevel.id).all()
     if user.student:
         student = Student.query.filter(Student.user_id == user.id).first()
-        student_level = (
-            StudentLevel.query
-            .join(SubjectLevel, StudentLevel.level_id == SubjectLevel.id)
-            .filter(
-                StudentLevel.subject_id == subject_id,
-                StudentLevel.student_id == student.id,
-                SubjectLevel.system_name == system_name
-            )
-            .order_by(SubjectLevel.id)
-            .all()
-        )
-
+        student_level = StudentLevel.query.filter(StudentLevel.subject_id == subject_id,
+                                                  StudentLevel.student_id == student.id).join(SubjectLevel).order_by(
+            SubjectLevel.id).all()
         return jsonify({
             "data": iterate_models(student_level)
         })
