@@ -29,8 +29,9 @@ def subject_list():
         subjects = Subject.query.filter(
             or_(Subject.disabled == False, Subject.disabled == None, Subject.levels != None)).order_by(
             Subject.id).all()
-        # requests.post(f"{gennis_server_url}/api/classroom/subjects_add", json={"subjects": iterate_models(subjects)})
-        requests.post(f"{turon_server_url}/api/Subjects/subject/", json={"data": iterate_models(subjects)})
+        server_send = Subject.query.order_by(Subject.id).all()
+        requests.post(f"{gennis_server_url}/api/classroom/subjects_add", json={"subjects": iterate_models(server_send)})
+        requests.post(f"{turon_server_url}/api/Subjects/subject/", json={"data": iterate_models(server_send)})
 
     elif user.role.type == "student":
         student = Student.query.filter(Student.user_id == user.id).first()
