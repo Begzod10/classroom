@@ -184,7 +184,8 @@ def refresh():
     info = {
         "info": user.convert_json(),
         "access_token": create_access_token(identity=identity),
-        "refresh_token": create_refresh_token(identity=user.classroom_user_id)
+        "refresh_token": create_refresh_token(identity=user.classroom_user_id),
+        "parent": user.parent.convert_json() if user.parent else None
         # "img": response.json()['profile_photo'] if "profile_photo" in response.json() else None
     }
     return jsonify({
