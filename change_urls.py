@@ -10,7 +10,7 @@ session = Session()
 metadata = MetaData()
 metadata.reflect(bind=engine)
 
-tables_to_update = ["file"]
+tables_to_update = ["file","pisa_file_type"]
 
 for table_name in tables_to_update:
     print(table_name)
