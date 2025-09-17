@@ -10,9 +10,10 @@ session = Session()
 metadata = MetaData()
 metadata.reflect(bind=engine)
 
-tables_to_update = ["file", "pisafiletype"]
+tables_to_update = ["file"]
 
 for table_name in tables_to_update:
+    print(table_name)
     table = metadata.tables[table_name]
 
     stmt = (update(table).where(table.c.url.like('static/%')).values(
