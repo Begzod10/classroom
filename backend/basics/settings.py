@@ -26,7 +26,7 @@ def check_img_remove(img, File):
         img.exercise_block, img.users, img.file_audio, img.file_img
     ])
     if not has_links:
-        img_path = os.path.join("frontend", "build", img.url)
+        img_path = os.path.join("staticfiles", img.url)
         if os.path.isfile(img_path):
             os.remove(img_path)
 

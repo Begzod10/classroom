@@ -45,25 +45,12 @@ def student_group_list(platform_id, year, month):
 @get_parent_bp.route('/student_attendance/<platform_id>/', defaults={"group_id": None, "year": None, "month": None})
 @get_parent_bp.route('/student_attendance/<platform_id>/<group_id>/<year>/<month>', methods=['GET'])
 def student_attendance(platform_id, group_id, year, month):
-    if group_id == "None" or group_id == None:
-        if year == None:
-            response = requests.get(
-                f"{gennis_server_url}/api/parent/get_student_attendance_days_list/{platform_id}/",
-                headers={
-                    'Content-Type': 'application/json'
-                })
-        else:
-            response = requests.get(
-                f"{gennis_server_url}/api/parent/get_student_attendance_days_list/{platform_id}/{group_id}/{year}/{month}",
-                headers={
-                    'Content-Type': 'application/json'
-                })
-    else:
-        response = requests.get(
-            f"{gennis_server_url}/api/parent/get_student_attendance_days_list/{platform_id}/{group_id}/{year}/{month}",
-            headers={
-                'Content-Type': 'application/json'
-            })
+    response = requests.get(
+        f"{gennis_server_url}/api/parent/get_student_attendance_days_list/{platform_id}/{group_id}/{year}/{month}",
+        headers={
+            'Content-Type': 'application/json'
+        })
+
     group_response = response.json()
     return jsonify(group_response)
 

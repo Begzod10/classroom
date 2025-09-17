@@ -7,10 +7,10 @@ basedir = os.path.abspath(os.path.dirname(__file__))
 
 DEBUG = True
 
-DB_USER = os.getenv('FLASK_DB_USER', 'postgres')
-DB_PASSWORD = os.getenv('FLASK_DB_PASSWORD', '123')
-DB_HOST = os.getenv('DB_HOST', 'localhost:5432')
-DB_NAME = os.getenv('FLASK_DB_NAME', 'classroom')
+DB_USER = os.getenv('FLASK_DB_USER')
+DB_PASSWORD = os.getenv('FLASK_DB_PASSWORD')
+DB_HOST = os.getenv('DB_HOST')
+DB_NAME = os.getenv('FLASK_DB_NAME')
 database_path = 'postgresql://{}:{}@{}/{}'.format(DB_USER, DB_PASSWORD, DB_HOST, DB_NAME)
 SEND_FILE_MAX_AGE_DEFAULT = timedelta(hours=12)
 SQLALCHEMY_DATABASE_URI = database_path
