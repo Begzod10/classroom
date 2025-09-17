@@ -43,14 +43,14 @@ def save_img(photo,  type_file=None):
     unique_name = generate_unique_filename(file_name)
 
     if type_file == "img":
-        upload_folder = os.path.join(basedir, "frontend", "build", "static", "img")
-        photo_url = f"static/img/{unique_name}"
+        upload_folder = os.path.join(basedir, "staticfiles", "img")
+        photo_url = f"staticfiles/img/{unique_name}"
     elif type_file == "audio":
-        upload_folder = os.path.join(basedir, "frontend", "build", "static", "audio")
-        photo_url = f"static/audio/{unique_name}"
+        upload_folder = os.path.join(basedir, "staticfiles", "audio")
+        photo_url = f"staticfiles/audio/{unique_name}"
     elif type_file == "file":
-        upload_folder = os.path.join(basedir, "frontend", "build", "static", "files")
-        photo_url = f"static/files/{unique_name}"
+        upload_folder = os.path.join(basedir, "staticfiles", "files")
+        photo_url = f"staticfiles/files/{unique_name}"
     else:
         raise ValueError("Invalid type_file")
 
@@ -91,27 +91,27 @@ def define_size(url):
 
 
 def img_folder():
-    return 'frontend/build/static/img'
+    return 'staticfiles/img'
 
 
 def img_url():
-    return 'static/img'
+    return 'staticfiles/img'
 
 
 def file_url():
-    return 'static/files'
+    return 'staticfiles/files'
 
 
 def file_folder():
-    return 'frontend/build/static/files'
+    return 'staticfiles/files'
 
 
 def audio_folder():
-    return 'frontend/build/static/audio'
+    return 'staticfiles/audio'
 
 
 def audio_url():
-    return "static/audio"
+    return "staticfiles/audio"
 
 
 def create_msg(item, status, data=None):
