@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine, Table, MetaData, update, func
+from sqlalchemy import create_engine, MetaData, update, func
 from sqlalchemy.orm import sessionmaker
 
 DATABASE_URL = "postgresql://postgres:or9T#u-x5PZo--@localhost:5432/classroom"
@@ -10,17 +10,16 @@ session = Session()
 metadata = MetaData()
 metadata.reflect(bind=engine)
 
-file_table = metadata.tables['file']
+tables_to_update = ["file", "PisaFileType"]
 
-stmt = (
-    update(file_table)
-    .where(file_table.c.url.like('static/%'))  # faqat static bilan boshlanadiganlar
-    .values(url=func.replace(file_table.c.url, 'static/', 'staticfiles/'))
-)
+for table_name in tables_to_update:
+    table = metadata.tables[table_name]
 
-# Execute
-with engine.begin() as conn:
-    result = conn.execute(stmt)
-    print(f"{result.rowcount} qator yangilandi")
+    stmt = (update(table).where(table.c.url.like('static/%')).values(
+        url=func.replace(table.c.url, 'static/', 'staticfiles/')))
+
+    with engine.begin() as conn:
+        result = conn.execute(stmt)
+        print(f"{table_name} jadvalida {result.rowcount} qator yangilandi")
 
 session.close()
