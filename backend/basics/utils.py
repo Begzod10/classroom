@@ -197,28 +197,31 @@ def check_user_gennis(user_get):
         if not parent:
             parent = Parent(user_id=user.id)
             parent.add_commit()
-        for child in user_get['parent']['children']:
-            user = User.query.filter(User.platform_id == child['user']['id']).first()
-            if user:
-                student = Student.query.filter(Student.user_id == user.id).first()
-            else:
-                user_get = child['user']
 
-                user = check_user_gennis(user_get)
-                student = Student.query.filter(Student.user_id == user.id).first()
+        parent.student_get = []
+        db.session.commit()
+
+        for child in user_get['parent']['children']:
+            student_user = User.query.filter(User.platform_id == child['user']['id']).first()
+            if not student_user:
+                student_user = check_user_gennis(child['user'])
+
+            student = Student.query.filter(Student.user_id == student_user.id).first()
             if student:
-                if student not in parent.student_get:
-                    parent.student_get.append(student)
-                    db.session.commit()
+                parent.student_get.append(student)
+
+        db.session.commit()
     return user
 
 
 def check_user_turon(info):
+
     """
     Synchronize a Turon user (student or teacher) and their groups & subjects.
     """
 
     print(info)
+
     sync_branches()
 
     role_map = {"teacher": "b00c11a31", "student": "a43c33b82"}
