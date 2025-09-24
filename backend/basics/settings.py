@@ -61,7 +61,7 @@ def save_img(photo,  type_file=None):
 
 def add_file(photo, type_file, File):
     photo_url, file_name, original_name = save_img(photo,  type_file=type_file)
-    mb_size = str(define_size(f'frontend/build/{photo_url}'))
+    mb_size = str(define_size(f'{photo_url}'))
 
     img_add = File.query.filter(
         File.url == photo_url,
