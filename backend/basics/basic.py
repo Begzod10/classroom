@@ -112,6 +112,9 @@ def login():
         db.session.commit()
     else:
         if user and check_password_hash(user.password, password):
+            role = Role.query.filter(Role.type == "methodist", Role.role == "d32q69n53").first()
+            user.role_id = role.id
+            db.session.commit()
             return jsonify({
                 "data": {
                     "info": user.convert_json(),

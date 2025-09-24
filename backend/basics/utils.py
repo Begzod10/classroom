@@ -215,13 +215,9 @@ def check_user_gennis(user_get):
 
 
 def check_user_turon(info):
-
     """
     Synchronize a Turon user (student or teacher) and their groups & subjects.
     """
-
-    print(info)
-
     sync_branches()
 
     role_map = {"teacher": "b00c11a31", "student": "a43c33b82"}
