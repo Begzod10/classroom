@@ -106,7 +106,7 @@ class User(db.Model):
                 "platform_id": self.platform_id, "location_id": self.location_id,
                 "platform_location": self.location.platform_id if self.location else None, "observer": self.observer,
                 "img_url": img, "system_name": self.system_name,
-                'id2': id2, "turon_branch_id": self.branch.turon_id, 'turon_teacher_id': turon_teacher_id}
+                'id2': id2, "turon_branch_id": self.branch.turon_id if self.branch else None, 'turon_teacher_id': turon_teacher_id}
 
     def add_commit(self):
         db.session.add(self)
