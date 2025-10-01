@@ -3,6 +3,7 @@ from .platform.crud import teacher_blueprint
 from .platform.lesson_plan import lesson_plan_blueprint
 from .platform.observation import observe_blueprint
 from .platform.salary import teacher_salary_blueprints
+from .requests import requests_blueprint
 
 
 def register_create_teacher(api, app):
@@ -11,3 +12,4 @@ def register_create_teacher(api, app):
     app.register_blueprint(teacher_blueprint, url_prefix=f"{api}/teacher")
     app.register_blueprint(lesson_plan_blueprint, url_prefix=f"{api}/teacher")
     app.register_blueprint(teacher_salary_blueprints, url_prefix=f"{api}/teacher")
+    app.register_blueprint(requests_blueprint, url_prefix=f"{api}/teacher")
