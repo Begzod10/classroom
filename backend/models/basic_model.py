@@ -99,14 +99,19 @@ class User(db.Model):
             id2 = self.student.id
         if self.teacher:
             id2 = self.teacher[0].id
+        if self.teacher and self.teacher[0].turon_id:
             turon_teacher_id = self.teacher[0].turon_id
+        else:
+            turon_teacher_id = None
         return {"id": self.id, "name": self.name, "surname": self.surname, "username": self.username,
                 "balance": self.balance, "age": self.age, "role": self.role.role, "father_name": self.father_name,
                 "parent_phone": self.parent_phone, "born_date": f'{day}-{month}-{self.born_year}', "phone": self.phone,
                 "platform_id": self.platform_id, "location_id": self.location_id,
                 "platform_location": self.location.platform_id if self.location else None, "observer": self.observer,
                 "img_url": img, "system_name": self.system_name,
-                'id2': id2, "turon_branch_id": self.branch.turon_id if self.branch else None, 'turon_teacher_id': turon_teacher_id}
+
+                'id2': id2, "turon_branch_id": self.branch.turon_id if self.branch else None,
+                'turon_teacher_id': turon_teacher_id}
 
     def add_commit(self):
         db.session.add(self)
