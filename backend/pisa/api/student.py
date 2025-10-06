@@ -612,8 +612,10 @@ def pisa_student_list():
 def get_pisa_results(platform_id):
     """
     Studentning platform_id bo'yicha Pisa test natijalari
+
     """
-    student = PisaTest.query.filter(Student.platform_id == platform_id).first()
+    student = Student.query.filter(Student.platform_id == platform_id).first()
+    student = PisaStudent.query.filter(User.id == student.user.id).first()
     if not student:
         return jsonify({"success": False, "message": "Student topilmadi"}), 404
 
