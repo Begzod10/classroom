@@ -18,7 +18,8 @@ def get_teacher_and_system(turon_id=None, teacher_id=None):
             system_name = teacher.user.system_name
 
     elif teacher_id:  # Gennis uchun
-        teacher = Teacher.query.filter_by(id=teacher_id).first()
+
+        teacher = Teacher.query.filter_by(user_id=teacher_id).first()
         if teacher:
             system_name = teacher.user.system_name
 
