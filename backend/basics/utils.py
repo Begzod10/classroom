@@ -150,14 +150,14 @@ def check_user_gennis(user_get):
         if not student:
             student = Student(user_id=user.id, debtor=user_get['student']['debtor'],
                               representative_name=user_get['student']['representative_name'],
-                              representative_surname=user_get['student']['representative_surname'])
+                              representative_surname=user_get['student']['representative_surname'],platform_id=user_get['student']['id'])
             student.add_commit()
         else:
             Student.query.filter(Student.user_id == user.id).update({"debtor": user_get['student']['debtor'],
                                                                      "representative_name": user_get['student'][
                                                                          'representative_name'],
                                                                      "representative_surname": user_get['student'][
-                                                                         'representative_surname']})
+                                                                         'representative_surname'],"platform_id":user_get['student']['id']})
             db.session.commit()
         for gr in user_get['student']['group']:
             group, _ = check_group_info(gr)

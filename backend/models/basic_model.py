@@ -135,6 +135,7 @@ class Student(db.Model):
     student_comments = relationship("StudentCommentForLesson", backref="student", order_by="StudentCommentForLesson.id")
     parent_get = relationship('Parent', secondary="parent_child", backref="student", lazy="select")
     turon_id = Column(Integer)
+    platform_id = Column(Integer)
 
     def add_commit(self):
         db.session.add(self)

@@ -1,7 +1,7 @@
 from app import jsonify, request
 from backend.models.basic_model import db, Pisa, PisaBlockText, PisaBlockTextAnswer, PisaBlockQuestionOptions, PisaTest, \
     PisaStudent, PisaFileType, PisaBlockOptionsStudent, PisaBlockTextAnswerStudent, School, create_school, User, \
-    PisaStudent, Role, Location
+    PisaStudent, Role, Location, Student
 import pprint
 from sqlalchemy import or_, and_
 from .utils import serialize_block
@@ -607,3 +607,30 @@ def pisa_student_list():
             'pages': paginated.pages,
             'current_page': paginated.page
         }), 200
+
+@pisa_student_bp.route("/pisa/results/<string:platform_id>", methods=["GET"])
+def get_pisa_results(platform_id):
+    """
+    Studentning platform_id bo'yicha Pisa test natijalari
+    """
+    base_student = Student.query.filter_by(platform_id=platform_id).first()
+    if not base_student:
+        return jsonify({"success": False, "message": "Student topilmadi"}), 404
+
+    pisa_student = PisaStudent.query.filter_by(user_id=base_student.user.id).first()
+    if not pisa_student:
+        return jsonify({"success": False, "message": "Pisa Student topilmadi"}), 404
+
+    tests = (
+        PisaTest.query
+        .filter(PisaTest.student_id == pisa_student.id, PisaTest.finished == True)
+        .join(Pisa, Pisa.id == PisaTest.pisa_id)
+        .all()
+    )
+
+    if not tests:
+        return jsonify({"success": True, "data": []}), 200
+
+    result = [t.convert_json() for t in tests]
+
+    return jsonify({"success": True, "data": result}), 200
