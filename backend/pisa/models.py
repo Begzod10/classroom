@@ -176,7 +176,7 @@ class PisaTest(db.Model):
     def convert_json(self, entire=False):
         pisa_student = PisaStudent.query.filter(PisaStudent.id == self.student_id).first()
 
-        return {"id": self.id, "student_id": self.student_id, "pisa_id": self.pisa_id,
+        return {"id": self.id, "student_id": self.student_id, "pisa_id": self.pisa_id,"pisa_name": self.pisa.name if self.pisa else None,
                 "true_answers": self.true_answers,
                 "location": {
                     "id": pisa_student.user.location_id if pisa_student.user.location_id else None,
