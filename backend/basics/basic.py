@@ -40,8 +40,8 @@ def login():
 
             if not user_get:
                 return {"msg": "Username yoki parol noto'g'ri", "success": False}, 200
-            if not user:
-                user = check_user_gennis(user_get)
+            # if not user:
+            user = check_user_gennis(user_get)
 
             if user_get['parent']:
                 check_user_gennis(user_get)
