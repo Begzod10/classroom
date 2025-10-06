@@ -3,7 +3,8 @@ from flask import Blueprint
 
 from app import request, jsonify, jwt_required, get_jwt_identity
 from backend.models.basic_model import User, Group
-from backend.configs import gennis_server_url
+from backend.configs import gennis_server_url, turon_server_url
+
 observe_blueprint = Blueprint('observe', __name__)
 from flasgger import swag_from
 

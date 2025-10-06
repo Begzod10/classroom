@@ -607,3 +607,40 @@ def pisa_student_list():
             'pages': paginated.pages,
             'current_page': paginated.page
         }), 200
+
+@pisa_student_bp.route("/pisa/results/<string:platform_id>", methods=["GET"])
+def get_pisa_results(platform_id):
+    """
+    Studentning platform_id bo'yicha Pisa test natijalari
+    """
+    student = PisaStudent.query.join(User).filter(User.platform_id == platform_id).first()
+    if not student:
+        return jsonify({"success": False, "message": "Student topilmadi"}), 404
+
+    tests = (
+        PisaTest.query
+        .filter_by(student_id=student.id, finished=True)
+        .join(Pisa, Pisa.id == PisaTest.pisa_id)
+        .all()
+    )
+
+    results = []
+    for test in tests:
+        percentage = round((test.true_answers / test.total_questions) * 100, 2) if test.total_questions else 0
+        results.append({
+            "test_name": test.pisa.name,
+            "date": test.test_date.strftime("%Y-%m-%d %H:%M"),
+            "correct_answers": test.true_answers,
+            "percentage": percentage
+        })
+
+    return jsonify({
+        "success": True,
+        "student": {
+            "id": student.id,
+            "name": student.user.name,
+            "surname": student.user.surname,
+            "platform_id": student.user.platform_id
+        },
+        "results": results
+    })
