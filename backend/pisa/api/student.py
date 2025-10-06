@@ -617,7 +617,7 @@ def get_pisa_results(platform_id):
     if not base_student:
         return jsonify({"success": False, "message": "Student topilmadi"}), 404
 
-    pisa_student = PisaStudent.query.filter_by(student_id=base_student.id).first()
+    pisa_student = PisaStudent.query.filter_by(user_id=base_student.user.id).first()
     if not pisa_student:
         return jsonify({"success": False, "message": "Pisa Student topilmadi"}), 404
 
