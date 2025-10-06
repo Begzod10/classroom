@@ -1,7 +1,7 @@
 from app import jsonify, request
 from backend.models.basic_model import db, Pisa, PisaBlockText, PisaBlockTextAnswer, PisaBlockQuestionOptions, PisaTest, \
     PisaStudent, PisaFileType, PisaBlockOptionsStudent, PisaBlockTextAnswerStudent, School, create_school, User, \
-    PisaStudent, Role, Location
+    PisaStudent, Role, Location, Student
 import pprint
 from sqlalchemy import or_, and_
 from .utils import serialize_block
@@ -613,7 +613,7 @@ def get_pisa_results(platform_id):
     """
     Studentning platform_id bo'yicha Pisa test natijalari
     """
-    student = PisaStudent.query.join(User).filter(User.platform_id == platform_id).first()
+    student = PisaStudent.query.join(Student).filter(Student.platform_id == platform_id).first()
     if not student:
         return jsonify({"success": False, "message": "Student topilmadi"}), 404
 
