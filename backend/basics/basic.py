@@ -75,9 +75,9 @@ def login():
                 return {"msg": "Username yoki parol noto'g'ri", "success": False}, 200
             if not user:
                 user = check_user_gennis(user_get)
-
+            user.system_name = system_name
+            db.session.commit()
             if user_get['parent']:
-                pprint(user_get)
                 check_user_gennis(user_get)
 
         else:
@@ -88,11 +88,12 @@ def login():
                 "password": password,
             })
             user_get = response.json()['user'] if 'user' in response.json() else {}
-            print(user_get)
             if not user_get:
                 return {"msg": "Username yoki parol noto'g'ri", "success": False}, 200
 
             user = check_user_turon(user_get)
+            user.system_name = system_name
+            db.session.commit()
         if user:
             if user.role.type != "methodist" and user.role.type != "parent":
                 if system_name == "gennis":
