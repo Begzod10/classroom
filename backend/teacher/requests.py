@@ -11,7 +11,8 @@ requests_blueprint = Blueprint('requests', __name__)
 def get_teacher_and_system(turon_id=None, teacher_id=None):
     teacher = None
     system_name = None
-
+    print(teacher_id)
+    print(turon_id)
     if turon_id:  # Turon uchun
         teacher = Teacher.query.filter_by(turon_id=turon_id).first()
         if teacher:
