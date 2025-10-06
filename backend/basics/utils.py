@@ -145,6 +145,7 @@ def check_user_gennis(user_get):
     user.balance = user_get['balance']
     user.classroom_user_id = classroom_user_id
     db.session.commit()
+    print('Test')
     if user_get['student']:
         print(user_get['student'])
         student = Student.query.filter(Student.user_id == user.id).first()
