@@ -114,6 +114,7 @@ def update_timetable(pk):
 @crud_timetable_bp.route("/timetable-list-create", methods=["POST"])
 def create_timetable():
     data = request.get_json()
+    print(data)
 
     try:
         timetable = ClassTimeTable(turon_id=data.get("id"))
