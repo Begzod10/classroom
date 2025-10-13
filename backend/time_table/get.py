@@ -40,9 +40,10 @@ def timetable_lessons():
     sync_rooms()
     sync_weekdays()
     sync_hours()
+    teacher = Teacher.query.get(teacher_id)
     branches = Branch.query.all()
-    for branchs in branches:
-        sync_timetable(branchs.turon_id)
+    # for branchs in branches:
+    sync_timetable(teacher.user.branch.turon_id)
     branch = None
 
     if teacher_id:
