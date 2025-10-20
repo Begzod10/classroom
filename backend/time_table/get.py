@@ -42,6 +42,7 @@ def timetable_lessons():
     sync_hours()
     teacher = Teacher.query.get(teacher_id)
     branches = Branch.query.all()
+    print(teacher.user.branch)
     # for branchs in branches:
     sync_timetable(teacher.user.branch.turon_id)
     branch = None

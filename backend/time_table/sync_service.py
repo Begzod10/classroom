@@ -86,6 +86,7 @@ def sync_timetable(branch_id):
                     tt = ClassTimeTable.query.filter_by(
                         turon_id=int(lesson.get("id"))
                     ).first()
+                    print(tt)
                     if not tt:
                         tt = ClassTimeTable(turon_id=int(lesson.get("id")))
 
