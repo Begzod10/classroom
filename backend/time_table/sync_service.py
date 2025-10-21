@@ -61,9 +61,13 @@ def sync_hours():
     db.session.commit()
 
 
-def sync_timetable(branch_id):
+def sync_timetable(branch_id,which_week):
+    params = {'branch': branch_id}
+
+    if which_week in ['prev', 'next']:
+        params['which_week'] = which_week
     resp = requests.get(
-        f"{turon_server_url}/api/SchoolTimeTable/timetable-lessons/?branch={branch_id}"
+        f"{turon_server_url}/api/SchoolTimeTable/timetable-lessons/",params=params
     ).json()
 
     branch = Branch.query.filter_by(turon_id=branch_id).first()
