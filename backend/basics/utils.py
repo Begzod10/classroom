@@ -277,12 +277,10 @@ def check_user_turon(info):
             role_instance = Student(user_id=user.id, turon_id=info['student_id'])
             db.session.add(role_instance)
         if role_instance and role_instance.turon_id == None:
-            print(info['color'], 'aas')
             role_instance.turon_id == info['student_id']
             db.session.commit()
     else:
         role_instance = Teacher.query.filter_by(user_id=user.id).first()
-        print(info['color'])
         if not role_instance:
             if info['color']:
                 role_instance = Teacher(user_id=user.id, turon_id=info['teacher_id'], color=info['color'])
