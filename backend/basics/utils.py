@@ -219,6 +219,7 @@ def check_user_turon(info):
     Synchronize a Turon user (student or teacher) and their groups & subjects.
     """
     sync_branches()
+    print(info)
 
     role_map = {"teacher": "b00c11a31", "student": "a43c33b82"}
     role = Role.query.filter_by(type=info['role'], role=role_map[info['role']]).first()
