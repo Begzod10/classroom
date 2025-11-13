@@ -289,7 +289,7 @@ def get_pisa_test(pk):
 
 
 @pisa_student_bp.route(f'/complete/pisa/test/<pk>', methods=['POST'])
-# @jwt_required()
+@jwt_required()
 # @swag_from({
 #     'tags': ['Pisa'],
 #     'summary': 'Submit answers for a Pisa test block',
