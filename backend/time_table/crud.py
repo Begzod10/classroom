@@ -15,7 +15,6 @@ crud_timetable_bp = Blueprint("timetable_crud", __name__)
 @crud_timetable_bp.route("/timetable-list-delete/<int:pk>", methods=["DELETE"])
 def class_time_table_detail_delete(pk):
     class_time_table = ClassTimeTable.query.filter_by(turon_id=pk).first()
-    print("class_time_table", class_time_table)
     if not class_time_table:
         return jsonify({"error": "Dars topilmadi"}), 404
 
