@@ -427,7 +427,7 @@ def complete_pisa_test(pk):
 
 @pisa_student_bp.route(f'/complete/pisa/test_bot/<pk>/<platform_id>', methods=['POST'])
 @jwt_required()
-def complete_pisa_test(pk, platform_id):
+def complete_pisa_test_bot(pk, platform_id):
     user = User.query.filter(User.platform_id == platform_id).first()
     pisa_student = PisaStudent.query.filter_by(user_id=user.id).first()
 
