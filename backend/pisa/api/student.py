@@ -106,9 +106,6 @@ def register_pisa():
     return jsonify([location.convert_json() for location in locations])
 
 
-from flasgger import swag_from
-
-
 @pisa_student_bp.route('/check/username', methods=['POST'])
 # @swag_from({
 #     'tags': ['Pisa Student'],
@@ -290,70 +287,148 @@ def get_pisa_test(pk):
 
 @pisa_student_bp.route(f'/complete/pisa/test/<pk>', methods=['POST'])
 @jwt_required()
-# @swag_from({
-#     'tags': ['Pisa'],
-#     'summary': 'Submit answers for a Pisa test block',
-#     'parameters': [
-#         {
-#             'name': 'pk',
-#             'in': 'path',
-#             'required': True,
-#             'description': 'Pisa test ID',
-#             'type': 'integer'
-#         },
-#         {
-#             'name': 'body',
-#             'in': 'body',
-#             'required': True,
-#             'schema': {
-#                 'type': 'object',
-#                 'properties': {
-#                     'block_id': {'type': 'integer'},
-#                     'type': {'type': 'string', 'enum': ['select', 'input']},
-#                     'answer': {
-#                         'type': 'object',
-#                         'properties': {
-#                             'id': {'type': 'integer'},
-#                             'value': {'type': 'string'},
-#                             'valueId': {'type': 'integer'}
-#                         }
-#                     },
-#                     'answers': {
-#                         'type': 'array',
-#                         'items': {
-#                             'type': 'object',
-#                             'properties': {
-#                                 'id': {'type': 'integer'},
-#                                 'type': {'type': 'string', 'enum': ['input', 'select']},
-#                                 'value': {'type': 'string'},
-#                                 'valueId': {'type': 'integer'}
-#                             }
-#                         }
-#                     }
-#                 },
-#                 'example': {
-#                     "block_id": 1,
-#                     "type": "input",
-#                     "answer": {"id": 3, "value": "Answer"}
-#                 }
-#             }
-#         }
-#     ],
-#     'responses': {
-#         200: {
-#             'description': 'Submission result',
-#             'examples': {
-#                 'application/json': {
-#                     "success": True,
-#                     "msg": "Muvaffaqiyatli yakunlandi",
-#                     "student_pisa_id": 123
-#                 }
-#             }
-#         }
-#     }
-# })
 def complete_pisa_test(pk):
     user = User.query.filter(User.classroom_user_id == get_jwt_identity()).first()
+    pisa_student = PisaStudent.query.filter_by(user_id=user.id).first()
+
+    if not pisa_student:
+        pisa_student = PisaStudent(user_id=user.id)
+        db.session.add(pisa_student)
+        db.session.commit()
+    get_pisa = Pisa.query.filter(Pisa.id == pk).first()
+    get_blocks = PisaBlockText.query.filter(PisaBlockText.pisa_id == get_pisa.id).filter(
+        or_(PisaBlockText.answers != None, PisaBlockText.options != None)).count()
+
+    get_pisa.total_questions = get_blocks
+    db.session.commit()
+    pisa_test_exist = PisaTest.query.filter(PisaTest.pisa_id == get_pisa.id,
+                                            PisaTest.student_id == pisa_student.id).first()
+
+    if not pisa_test_exist:
+        pisa_test_exist = PisaTest(pisa_id=get_pisa.id, student_id=pisa_student.id, true_answers=0,
+                                   false_answers=0, result=0)
+        pisa_test_exist.add()
+    type_question = request.get_json()['type'] if 'type' in request.get_json() else None
+    get_block = PisaBlockText.query.filter(PisaBlockText.pisa_id == get_pisa.id,
+                                           PisaBlockText.id == request.get_json()['block_id']).first()
+
+    if type_question:
+        if type_question == 'select' or type_question == 'input':
+
+            get_pisa_options = PisaBlockQuestionOptions.query.filter(
+                PisaBlockQuestionOptions.pisa_block_id == get_block.id,
+                PisaBlockQuestionOptions.answer == None,
+                PisaBlockQuestionOptions.id ==
+                request.get_json()['answer']['id']).first() if 'id' in \
+                                                               request.get_json()[
+                                                                   'answer'] else None
+            get_pisa_input = PisaBlockQuestionOptions.query.filter(
+                PisaBlockQuestionOptions.pisa_block_id == get_block.id, PisaBlockQuestionOptions.answer != '').first()
+
+            if get_pisa_options:
+                student_options_exists = PisaBlockOptionsStudent.query.filter(
+                    PisaBlockOptionsStudent.pisa_block_text_id == get_block.id,
+                    PisaBlockOptionsStudent.pisa_test_id == pisa_test_exist.id,
+                    PisaBlockOptionsStudent.student_id == pisa_student.id).first()
+                if not student_options_exists:
+                    student_options_exists = PisaBlockOptionsStudent(pisa_block_question_options_id=get_pisa_options.id,
+                                                                     pisa_test_id=pisa_test_exist.id,
+                                                                     text=get_pisa_options.text,
+                                                                     answer=get_pisa_options.answer,
+                                                                     isTrue=get_pisa_options.isTrue,
+                                                                     pisa_block_text_id=get_block.id,
+                                                                     student_id=pisa_student.id)
+                    student_options_exists.add()
+                else:
+                    student_options_exists.text = get_pisa_options.text
+                    student_options_exists.answer = get_pisa_options.answer
+                    student_options_exists.isTrue = get_pisa_options.isTrue
+                    student_options_exists.pisa_block_question_options_id = get_pisa_options.id
+                    db.session.commit()
+            if get_pisa_input:
+                student_input_exists = PisaBlockOptionsStudent.query.filter(
+                    PisaBlockOptionsStudent.pisa_block_text_id == get_block.id,
+                    PisaBlockOptionsStudent.pisa_test_id == pisa_test_exist.id,
+                    PisaBlockOptionsStudent.student_id == pisa_student.id).first()
+                if not student_input_exists:
+                    student_input_exists = PisaBlockOptionsStudent(pisa_block_question_options_id=get_pisa_input.id,
+                                                                   pisa_test_id=pisa_test_exist.id,
+                                                                   text=get_pisa_input.text,
+                                                                   answer=get_pisa_input.answer,
+                                                                   isTrue=True if request.get_json()[
+                                                                                      'answer'] == get_pisa_input.answer else False,
+                                                                   pisa_block_text_id=get_block.id,
+                                                                   student_id=pisa_student.id)
+                    student_input_exists.add()
+                else:
+                    student_input_exists.text = get_pisa_input.text
+                    student_input_exists.answer = get_pisa_input.answer
+                    student_input_exists.isTrue = True if request.get_json()[
+                                                              'answer'] == get_pisa_input.answer else False
+                    student_input_exists.pisa_block_question_options_id = get_pisa_input.id
+                    db.session.commit()
+    else:
+        answers = request.get_json()['answers']
+        for answer in answers:
+            get_answers = PisaBlockTextAnswer.query.filter(PisaBlockTextAnswer.pisa_block_id == get_block.id,
+                                                           PisaBlockTextAnswer.id == answer['id']).first()
+            if answer['type'] == 'input':
+                status = True if get_answers.text == answer['value'] else False
+            else:
+                status = True if answer['id'] == answer['valueId'] else False
+            exist_answer = PisaBlockTextAnswerStudent.query.filter(
+                PisaBlockTextAnswerStudent.pisa_block_text_id == get_block.id,
+                PisaBlockTextAnswerStudent.pisa_test_id == pisa_test_exist.id,
+                PisaBlockTextAnswerStudent.student_id == pisa_student.id).first()
+            if not exist_answer:
+                exist_answer = PisaBlockTextAnswerStudent(pisa_block_text_id=get_block.id,
+                                                          pisa_test_id=pisa_test_exist.id,
+                                                          text=get_answers.text,
+                                                          statusWord=get_answers.statusWord,
+                                                          type=get_answers.type,
+                                                          status=status,
+                                                          text_answer_id=get_answers.id,
+                                                          student_id=pisa_student.id)
+                exist_answer.add()
+            else:
+                exist_answer.text = get_answers.text
+                exist_answer.statusWord = get_answers.statusWord
+                exist_answer.type = get_answers.type
+                exist_answer.status = status
+                exist_answer.text_answer_id = get_answers.id
+                db.session.commit()
+
+    all_true_options = PisaBlockOptionsStudent.query.filter(PisaBlockOptionsStudent.pisa_test_id == pisa_test_exist.id,
+                                                            PisaBlockOptionsStudent.student_id == pisa_student.id,
+                                                            PisaBlockOptionsStudent.isTrue == True).count()
+    all_false_options = PisaBlockOptionsStudent.query.filter(PisaBlockOptionsStudent.pisa_test_id == pisa_test_exist.id,
+                                                             PisaBlockOptionsStudent.student_id == pisa_student.id,
+                                                             PisaBlockOptionsStudent.isTrue == False).count()
+
+    all_true_inputs = PisaBlockTextAnswerStudent.query.filter(
+        PisaBlockTextAnswerStudent.pisa_test_id == pisa_test_exist.id,
+        PisaBlockTextAnswerStudent.student_id == pisa_student.id,
+        PisaBlockTextAnswerStudent.status == True).count()
+    all_false_inputs = PisaBlockTextAnswerStudent.query.filter(
+        PisaBlockTextAnswerStudent.pisa_test_id == pisa_test_exist.id,
+        PisaBlockTextAnswerStudent.student_id == pisa_student.id,
+        PisaBlockTextAnswerStudent.status == False).count()
+
+    result = round(((all_true_options + all_true_inputs) / get_pisa.total_questions) * 100)
+
+    pisa_test_exist.true_answers = all_true_options + all_true_inputs
+    pisa_test_exist.false_answers = all_false_options + all_false_inputs
+    pisa_test_exist.result = result
+    pisa_test_exist.total_questions = get_pisa.total_questions
+    db.session.commit()
+
+    return jsonify({"success": True, "msg": "Muvaffaqiyatli yakunlandi", "student_pisa_id": pisa_test_exist.id}), 200
+
+
+@pisa_student_bp.route(f'/complete/pisa/test_bot/<pk>/<platform_id>', methods=['POST'])
+@jwt_required()
+def complete_pisa_test(pk, platform_id):
+    user = User.query.filter(User.platform_id == platform_id).first()
     pisa_student = PisaStudent.query.filter_by(user_id=user.id).first()
 
     if not pisa_student:
@@ -502,6 +577,17 @@ def show_results(pisa_test_id):
     return jsonify({"success": True, "msg": "Muvaffaqiyatli yakunlandi", "test": pisa_test.convert_json()}), 200
 
 
+@pisa_student_bp.route(f'/show/result_bot/<pisa_test_id>/<platform_id>', methods=['GET'])
+def show_results_bot(pisa_test_id, platform_id):
+    user = User.query.filter(User.platform_id == platform_id).first()
+
+    pisa_student = PisaStudent.query.filter(PisaStudent.user_id == user.id).first()
+    pisa_test = PisaTest.query.filter(PisaTest.pisa_id == pisa_test_id, PisaTest.student_id == pisa_student.id).first()
+    pisa_test.finished = True
+    db.session.commit()
+    return jsonify({"success": True, "msg": "Muvaffaqiyatli yakunlandi", "test": pisa_test.convert_json()}), 200
+
+
 @pisa_student_bp.route('/show/results', methods=['GET'])
 @jwt_required()
 def show_all_results():
@@ -607,6 +693,7 @@ def pisa_student_list():
             'pages': paginated.pages,
             'current_page': paginated.page
         }), 200
+
 
 @pisa_student_bp.route("/pisa/results/<string:platform_id>", methods=["GET"])
 def get_pisa_results(platform_id):
