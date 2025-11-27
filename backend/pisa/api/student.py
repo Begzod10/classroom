@@ -156,38 +156,7 @@ def check_username_pisa():
 
 
 @pisa_student_bp.route('/get/list')
-# @swag_from({
-#     'tags': ['Pisa Student'],
-#     'summary': 'Get available Pisa test list',
-#     'description': 'Returns a list of Pisa tests available to the logged-in student, including test completion status.',
-#     'security': [{'BearerAuth': []}],
-#     'responses': {
-#         200: {
-#             'description': 'List of Pisa tests',
-#             'content': {
-#                 'application/json': {
-#                     'example': [
-#                         {
-#                             "id": 1,
-#                             "name": "PISA 2025 Test A",
-#                             "total_questions": 15,
-#                             "finished": False
-#                         },
-#                         {
-#                             "id": 2,
-#                             "name": "PISA 2025 Test B",
-#                             "total_questions": 20,
-#                             "finished": True
-#                         }
-#                     ]
-#                 }
-#             }
-#         },
-#         401: {
-#             'description': 'Missing or invalid JWT token'
-#         }
-#     }
-# })
+@jwt_required()
 def get_pisa_list():
     user = User.query.filter(User.classroom_user_id == get_jwt_identity()).first()
     pisa_student = PisaStudent.query.filter(PisaStudent.user_id == user.id).first()
@@ -210,57 +179,60 @@ def get_pisa_list():
     return jsonify(pisa_list)
 
 
+@pisa_student_bp.route('/get/list_bot/<platform_id>')
+def get_pisa_list(platform_id):
+    user = User.query.filter(User.platform_id == platform_id).first()
+    pisa_student = PisaStudent.query.filter(PisaStudent.user_id == user.id).first()
+
+    pisa_tests = Pisa.query.filter(Pisa.status == True, Pisa.deleted == False).all()
+    pisa_list = []
+    for pisa in pisa_tests:
+        pisa_test = PisaTest.query.filter(
+            PisaTest.pisa_id == pisa.id,
+            PisaTest.student_id == pisa_student.id
+        ).first() if pisa_student else None
+
+        info = {
+            "id": pisa.id,
+            "name": pisa.name,
+            "total_questions": pisa.total_questions,
+            "finished": bool(pisa_test and pisa_test.finished)
+        }
+        pisa_list.append(info)
+    return jsonify(pisa_list)
+
+
 @pisa_student_bp.route(f'/get/test/<pk>')
-# @swag_from({
-#     'tags': ['PISA Tests'],
-#     'parameters': [
-#         {
-#             'name': 'pk',
-#             'in': 'path',
-#             'required': True,
-#             'type': 'integer',
-#             'description': 'PISA Test ID'
-#         },
-#         {
-#             'name': 'Authorization',
-#             'in': 'header',
-#             'type': 'string',
-#             'required': True,
-#             'description': 'JWT access token. Format: Bearer {token}'
-#         }
-#     ],
-#     'responses': {
-#         200: {
-#             'description': 'PISA test data or message if already completed',
-#             'examples': {
-#                 'application/json': {
-#                     "pisa_id": 1,
-#                     "name": "Math PISA",
-#                     "status": True,
-#                     "pisa_test_id": 10,
-#                     "pisa_blocks_left": [
-#                         {"id": 1, "index": 0, "content": "..."}
-#                     ],
-#                     "pisa_blocks_right": [
-#                         {"id": 2, "index": 0, "content": "..."}
-#                     ]
-#                 }
-#             }
-#         },
-#         404: {
-#             'description': 'PISA Test or User not found'
-#         }
-#     },
-#     'description': """
-# Returns detailed PISA test blocks and student progress.
-#
-# - Verifies if the test is already completed by the student
-# - Returns both left and right side blocks for the PISA test
-# """
-# })
+@jwt_required()
 def get_pisa_test(pk):
     pisa_test = Pisa.query.filter_by(id=pk).first_or_404()
     user = User.query.filter_by(classroom_user_id=get_jwt_identity()).first_or_404()
+    pisa_student = PisaStudent.query.filter_by(user_id=user.id).first()
+    pisa_test_student = PisaTest.query.filter_by(pisa_id=pk,
+                                                 student_id=pisa_student.id).first() if pisa_student else None
+
+    if pisa_test_student and pisa_test_student.finished:
+        return jsonify({"success": False, "msg": "Pisa test bajarilib bo‘lgan!"}), 200
+
+    blocks_left = PisaBlockText.query.filter_by(pisa_id=pisa_test.id, position='left').order_by(
+        PisaBlockText.index).all()
+    blocks_right = PisaBlockText.query.filter_by(pisa_id=pisa_test.id, position='right').order_by(
+        PisaBlockText.index).all()
+
+    return jsonify({
+        'pisa_id': pisa_test.id,
+        'name': pisa_test.name,
+        'status': pisa_test.status,
+        'pisa_test_id': pisa_test_student.id if pisa_test_student else None,
+        'pisa_blocks_left': [serialize_block(b, pisa_test_student, pisa_student) for b in blocks_left],
+        'pisa_blocks_right': [serialize_block(b, pisa_test_student, pisa_student) for b in blocks_right]
+    })
+
+
+@pisa_student_bp.route(f'/get/test_bot/<pk>/<platform_id>')
+def get_pisa_test(pk, platform_id):
+    pisa_test = Pisa.query.filter_by(id=pk).first_or_404()
+    user = User.query.filter(User.platform_id == platform_id).first_or_404()
     pisa_student = PisaStudent.query.filter_by(user_id=user.id).first()
     pisa_test_student = PisaTest.query.filter_by(pisa_id=pk,
                                                  student_id=pisa_student.id).first() if pisa_student else None
