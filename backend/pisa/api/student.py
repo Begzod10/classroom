@@ -180,7 +180,7 @@ def get_pisa_list():
 
 
 @pisa_student_bp.route('/get/list_bot/<platform_id>')
-def get_pisa_list(platform_id):
+def get_pisa_list_bot(platform_id):
     user = User.query.filter(User.platform_id == platform_id).first()
     pisa_student = PisaStudent.query.filter(PisaStudent.user_id == user.id).first()
 
@@ -230,7 +230,7 @@ def get_pisa_test(pk):
 
 
 @pisa_student_bp.route(f'/get/test_bot/<pk>/<platform_id>')
-def get_pisa_test(pk, platform_id):
+def get_pisa_test_bot(pk, platform_id):
     pisa_test = Pisa.query.filter_by(id=pk).first_or_404()
     user = User.query.filter(User.platform_id == platform_id).first_or_404()
     pisa_student = PisaStudent.query.filter_by(user_id=user.id).first()
