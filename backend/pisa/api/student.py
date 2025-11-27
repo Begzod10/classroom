@@ -156,7 +156,6 @@ def check_username_pisa():
 
 
 @pisa_student_bp.route('/get/list')
-@jwt_required()
 # @swag_from({
 #     'tags': ['Pisa Student'],
 #     'summary': 'Get available Pisa test list',
@@ -259,7 +258,6 @@ def get_pisa_list():
 # - Returns both left and right side blocks for the PISA test
 # """
 # })
-@jwt_required()
 def get_pisa_test(pk):
     pisa_test = Pisa.query.filter_by(id=pk).first_or_404()
     user = User.query.filter_by(classroom_user_id=get_jwt_identity()).first_or_404()
