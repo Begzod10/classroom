@@ -67,6 +67,16 @@ def get_notifications(user_id):
     return resp.json()
 
 
+def update_notifications(id):
+    url = f"{gennis_server_url}/api/mobile/notifications/{id}"
+
+    resp = requests.patch(url, headers={
+        'Content-Type': 'application/json'
+    })
+
+    return resp.json()
+
+
 def get_task_detail(task_id):
     url = f"{gennis_server_url}/api/mobile/missions_detail/{task_id}/"
 

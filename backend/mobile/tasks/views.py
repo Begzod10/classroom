@@ -1,6 +1,6 @@
 from app import request, jsonify
 from backend.mobile.tasks.func import get_user_tasks, TaskServiceError, update_task_status, add_comment, \
-    get_notifications, get_task_detail
+    get_notifications, get_task_detail, update_notifications
 from flask import Blueprint
 
 tasks_mobile = Blueprint('tasks_mobile', __name__)
@@ -60,6 +60,17 @@ def mobile_notifications():
 
     try:
         data = get_notifications(user_id)
+    except TaskServiceError as e:
+        return jsonify({"detail": str(e)}), 502
+
+    return jsonify(data), 200
+
+
+@tasks_mobile.route("/notifications/<int:id>/", methods=["PATCH"])
+def mobile_notifications(id):
+
+    try:
+        data = update_notifications(id)
     except TaskServiceError as e:
         return jsonify({"detail": str(e)}), 502
 
