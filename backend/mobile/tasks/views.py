@@ -67,8 +67,7 @@ def mobile_notifications():
 
 
 @tasks_mobile.route("/notifications/<int:id>/", methods=["PATCH"])
-def mobile_notifications(id):
-
+def mobile_notifications_update(id):
     try:
         data = update_notifications(id)
     except TaskServiceError as e:
