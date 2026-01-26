@@ -8,6 +8,7 @@ tasks_mobile = Blueprint('tasks_mobile', __name__)
 
 @tasks_mobile.route("/my-tasks/", methods=["GET"])
 def my_tasks():
+    print('acasa')
     user_id = request.args.get("user_id")
     status = request.args.get("status")
 

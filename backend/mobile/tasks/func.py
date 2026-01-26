@@ -8,7 +8,7 @@ class TaskServiceError(Exception):
 
 
 def get_user_tasks(user_id, status=None):
-    url = f"{gennis_server_url}/api/mobile/missions/mobile/"
+    url = f"{gennis_server_url}/api/mobile/missions/"
 
     params = {"user_id": user_id}
     if status:
@@ -23,7 +23,6 @@ def get_user_tasks(user_id, status=None):
         )
     except requests.RequestException as e:
         raise TaskServiceError(str(e))
-
     return resp.json()
 
 
@@ -69,7 +68,7 @@ def get_notifications(user_id):
 
 
 def get_task_detail(task_id):
-    url = f"{gennis_server_url}/api/missions/missions_detail/{task_id}/"
+    url = f"{gennis_server_url}/api/mobile/missions_detail/{task_id}/"
 
     resp = requests.get(url, headers={
         'Content-Type': 'application/json'
