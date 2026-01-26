@@ -1,6 +1,6 @@
 from app import request, jsonify
 from backend.mobile.tasks.func import get_user_tasks, TaskServiceError, update_task_status, add_comment, \
-    get_notifications
+    get_notifications, get_task_detail
 from flask import Blueprint
 
 tasks_mobile = Blueprint('tasks_mobile', __name__)
@@ -17,6 +17,12 @@ def my_tasks():
         return jsonify({"detail": str(e)}), 502
 
     return jsonify(tasks), 200
+
+
+@tasks_mobile.route("/tasks/<int:task_id>/", methods=["GET"])
+def mobile_task_detail(task_id):
+    data = get_task_detail(task_id)
+    return jsonify(data), 200
 
 
 @tasks_mobile.route("/tasks/<int:task_id>/status/", methods=["PATCH"])
