@@ -133,8 +133,17 @@ def group_profile(group_id):
                                                            level_id=level.id, self_chapter_id=exist_chapter.id,
                                                            order=lesson.order, chapter_id=chapter.id)
                             student_lesson.add_commit()
-    levels = SubjectLevel.query.filter(SubjectLevel.subject_id == group.subject_id).filter(
-        or_(SubjectLevel.disabled == False, SubjectLevel.disabled == None)).order_by(SubjectLevel.id).all()
+    if user.system_name == "gennis":
+        levels = SubjectLevel.query.filter(SubjectLevel.subject_id == group.subject_id).filter(
+            or_(SubjectLevel.disabled == False, SubjectLevel.disabled == None)).order_by(SubjectLevel.id).all()
+    else:
+        subject_ids = [s.id for s in group.subjects]
+
+        levels = SubjectLevel.query \
+            .filter(SubjectLevel.subject_id.in_(subject_ids)) \
+            .filter(or_(SubjectLevel.disabled == False, SubjectLevel.disabled == None)) \
+            .order_by(SubjectLevel.id) \
+            .all()
 
     group = Group.query.filter(Group.id == group_id).first()
     if student:

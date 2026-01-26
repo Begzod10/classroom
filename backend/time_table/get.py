@@ -35,6 +35,7 @@ def timetable_lessons():
     group_id = request.args.get("group")
     teacher_id = request.args.get("teacher")
     student_id = request.args.get("student")
+    which_week = request.args.get("which_week")
 
     sync_branches()
     sync_rooms()
@@ -42,8 +43,9 @@ def timetable_lessons():
     sync_hours()
     teacher = Teacher.query.get(teacher_id)
     branches = Branch.query.all()
+    print(teacher.user.branch)
     # for branchs in branches:
-    sync_timetable(teacher.user.branch.turon_id)
+    sync_timetable(teacher.user.branch.turon_id,which_week)
     branch = None
 
     if teacher_id:
@@ -103,23 +105,46 @@ def timetable_lessons():
         })
 
 
+
     elif date_ls is None and week_id is None:
+
         today = date.today()
-        start_week = today - timedelta(days=today.weekday())  # dushanba
+
+        start_week = today - timedelta(days=today.weekday())
+
+
+        if which_week == "prev":
+
+            start_week -= timedelta(days=7)
+
+        elif which_week == "next":
+
+            start_week += timedelta(days=7)
+
         for i in range(7):
             day_date = start_week + timedelta(days=i)
-            weekday_name = WEEK_DAYS[day_date.weekday()]
-            rooms_info = build_rooms_info(
-                rooms, hours, day_date,
-                branch, None,
-                group_id, teacher_id, student_id
-            )
-            time_tables.append({
-                "date": day_date.strftime("%Y-%m-%d"),
-                "weekday": weekday_name,
-                "rooms": rooms_info
-            })
 
+            weekday_name = WEEK_DAYS[day_date.weekday()]
+
+            rooms_info = build_rooms_info(
+
+                rooms, hours, day_date,
+
+                branch, None,
+
+                group_id, teacher_id, student_id
+
+            )
+
+            time_tables.append({
+
+                "date": day_date.strftime("%Y-%m-%d"),
+
+                "weekday": weekday_name,
+
+                "rooms": rooms_info
+
+            })
 
     elif date_ls:
         weekday_name = WEEK_DAYS[date_ls.weekday()]

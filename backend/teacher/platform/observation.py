@@ -2,8 +2,9 @@ import requests
 from flask import Blueprint
 
 from app import request, jsonify, jwt_required, get_jwt_identity
-from backend.models.basic_model import User, Group
 from backend.configs import gennis_server_url, turon_server_url
+from backend.models.basic_model import User, Group
+from backend.time_table.models import ClassTimeTable
 
 observe_blueprint = Blueprint('observe', __name__)
 from flasgger import swag_from
@@ -72,11 +73,22 @@ def teacher_observe(group_id):
 def observed_group(group_id, date):
     indentity = get_jwt_identity()
     user = User.query.filter(User.classroom_user_id == indentity).first()
+    print(user.system_name)
     group = Group.query.filter(Group.id == group_id).first()
     if user.system_name == "gennis":
-        response = requests.get(
-            f"{gennis_server_url}/api/teacher/observed_group_classroom/{group.platform_id}/{date}")
+        response = requests.get(f"{gennis_server_url}/api/teacher/observed_group_classroom/{group.platform_id}/{date}")
         return jsonify(response.json())
+    elif user.system_name == "turon":
+        if date is None:
+            time_table = ClassTimeTable.query.filter(ClassTimeTable.id == group_id).first()
+            response = requests.get(f"{turon_server_url}/api/Observation/observed_group_classroom/{time_table.turon_id}/")
+            return jsonify(response.json())
+        else:
+            time_table = ClassTimeTable.query.filter(ClassTimeTable.id == group_id).first()
+            response = requests.get(
+                f"{turon_server_url}/api/Observation/observed_group_classroom/{time_table.turon_id}/{date}/")
+            return jsonify(response.json())
+
 
 
 @observe_blueprint.route('/observed_group_info/<int:group_id>', methods=["POST"])
@@ -88,7 +100,10 @@ def observed_group_info(group_id):
     user = User.query.filter(User.classroom_user_id == indentity).first()
     group = Group.query.filter(Group.id == group_id).first()
     if user.system_name == "gennis":
-        response = requests.post(
-            f"{gennis_server_url}/api/teacher/observed_group_info_classroom/{group.platform_id}",
+        response = requests.post(f"{gennis_server_url}/api/teacher/observed_group_info_classroom/{group.platform_id}",
             json=request.get_json())
+        return jsonify(response.json())
+    if user.system_name == "turon":
+        time_table = ClassTimeTable.query.filter(ClassTimeTable.id == group_id).first()
+        response = requests.post(f"{turon_server_url}/api/Observation/observed_group_info_classroom/{time_table.turon_id}/",  json=request.get_json())
         return jsonify(response.json())
