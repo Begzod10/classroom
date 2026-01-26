@@ -28,7 +28,7 @@ from backend.user.views import register_user_view
 from backend.group.views import register_create_group
 from backend.class_test.views import register_class_test
 from backend.time_table.views import register_create_time_table
-
+from backend.mobile.tasks.urls import register_mobile_tasks_views
 from backend.models.views import UserAdmin, SubjectAdmin, RoleAdmin
 
 load_dotenv()
@@ -56,6 +56,7 @@ def create_app():
     register_create_basics(api_prefix, app)
     register_parent_views(api_prefix, app)
     register_mobile_parent_views(api_prefix, app)
+    register_mobile_tasks_views(api_prefix, app)
     register_student_routes(api_prefix, app)
     register_create_teacher(api_prefix, app)
     register_user_view(api_prefix, app)
