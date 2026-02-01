@@ -14,6 +14,8 @@ from flask_admin import Admin
 from backend.extentions import celery_init_app
 from dotenv import load_dotenv
 from backend.extentions import db, migrate, jwt, api, cors, admin
+from backend.mobile.group_test.urls import register_mobile_group_views
+from backend.mobile.teachers.urls import register_mobile_teachers_views
 from backend.pisa.api.views import register_pisa_views
 from backend.teacher.views import register_create_teacher
 
@@ -57,6 +59,8 @@ def create_app():
     register_parent_views(api_prefix, app)
     register_mobile_parent_views(api_prefix, app)
     register_mobile_tasks_views(api_prefix, app)
+    register_mobile_teachers_views(api_prefix, app)
+    register_mobile_group_views(api_prefix, app)
     register_student_routes(api_prefix, app)
     register_create_teacher(api_prefix, app)
     register_user_view(api_prefix, app)
