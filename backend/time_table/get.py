@@ -45,7 +45,7 @@ def timetable_lessons():
     branches = Branch.query.all()
     print(teacher.user.branch)
     # for branchs in branches:
-    sync_timetable(teacher.user.branch.turon_id,which_week)
+    sync_timetable(teacher.user.branch.turon_id, which_week)
     branch = None
 
     if teacher_id:
@@ -85,7 +85,6 @@ def timetable_lessons():
 
     time_tables = []
 
-
     if week_id and date_ls is None:
         today = date.today()
         today_weekday = today.isoweekday()
@@ -111,7 +110,6 @@ def timetable_lessons():
         today = date.today()
 
         start_week = today - timedelta(days=today.weekday())
-
 
         if which_week == "prev":
 
