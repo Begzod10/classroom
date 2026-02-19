@@ -112,9 +112,9 @@ def login():
         user.system_name = system_name
         db.session.commit()
     else:
-        password = generate_password_hash(password)
-        user.password = password
-        db.session.commit()
+        # password = generate_password_hash(password)
+        # user.password = password
+        # db.session.commit()
         if user and check_password_hash(user.password, password):
             role = Role.query.filter(Role.type == "methodist", Role.role == "d32q69n53").first()
             user.role_id = role.id
