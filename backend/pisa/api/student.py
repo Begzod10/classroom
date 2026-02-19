@@ -536,7 +536,7 @@ def complete_pisa_test_bot(pk, platform_id):
 
 @pisa_student_bp.route(f'/show/result/<pisa_test_id>', methods=['GET'])
 @jwt_required()
-def show_results(pisa_test_id):
+def show_result(pisa_test_id):
     user = User.query.filter(User.classroom_user_id == get_jwt_identity()).first()
 
     pisa_student = PisaStudent.query.filter(PisaStudent.user_id == user.id).first()
@@ -547,7 +547,7 @@ def show_results(pisa_test_id):
 
 
 @pisa_student_bp.route(f'/show/result_bot/<pisa_test_id>/<platform_id>', methods=['GET'])
-def show_results_bot(pisa_test_id, platform_id):
+def show_result_bot(pisa_test_id, platform_id):
     user = User.query.filter(User.platform_id == platform_id).first()
 
     pisa_student = PisaStudent.query.filter(PisaStudent.user_id == user.id).first()
